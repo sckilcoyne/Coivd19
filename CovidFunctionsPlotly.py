@@ -587,7 +587,7 @@ def githubIndex(dfStateData, fipsList):
         if int(fips) in [int(i) for i in dfStateData.index.tolist()]:
             stateName = dfStateData.at[str(fips).zfill(2), 'State']
             htmlFile = 'figs/Tracking Data ' + stateName + '.html'
-            indexFile.write('[' + stateName + '](' + githubURL + htmlFile + ')\n')
+            indexFile.write('[' + stateName + '](' + githubURL + htmlFile + ')  \n')
             
     indexFile.close()
             
