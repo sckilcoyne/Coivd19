@@ -1,0 +1,61 @@
+FIPS,Date,Event,Source
+All,4/12/20,Easter
+01,4/4/20,Stay-At-Home in effect,https://www.usatoday.com/story/news/nation/2020/03/30/coronavirus-stay-home-shelter-in-place-orders-by-state/5092413002/
+02,3/27/20,Social Distancing Mandate,https://www.usatoday.com/story/news/nation/2020/03/30/coronavirus-stay-home-shelter-in-place-orders-by-state/5092413002/
+04,3/30/20,Gov. Stay Home Order,https://www.usatoday.com/story/news/nation/2020/03/30/coronavirus-stay-home-shelter-in-place-orders-by-state/5092413002/
+06,3/19/20,Shelter-in-place order,https://www.usatoday.com/story/news/nation/2020/03/30/coronavirus-stay-home-shelter-in-place-orders-by-state/5092413002/
+08,3/26/20,Stay-at-home order in effect,https://www.usatoday.com/story/news/nation/2020/03/30/coronavirus-stay-home-shelter-in-place-orders-by-state/5092413002/
+09,3/22/20,Stay-home order,https://www.usatoday.com/story/news/nation/2020/03/30/coronavirus-stay-home-shelter-in-place-orders-by-state/5092413002/
+10,3/24/20,Stay-at-home,https://www.usatoday.com/story/news/nation/2020/03/30/coronavirus-stay-home-shelter-in-place-orders-by-state/5092413002/
+12,3/30/20,Stay-at-home for 4 worst counties,https://www.usatoday.com/story/news/nation/2020/03/30/coronavirus-stay-home-shelter-in-place-orders-by-state/5092413002/
+12,4/1/20,Stay-at-home for whole state,https://www.usatoday.com/story/news/nation/2020/03/30/coronavirus-stay-home-shelter-in-place-orders-by-state/5092413002/
+13,4/1/20,Stay-at-home,https://www.usatoday.com/story/news/nation/2020/03/30/coronavirus-stay-home-shelter-in-place-orders-by-state/5092413002/
+15,3/25/20,Stay-at-home in effect (announced 3/23),https://www.usatoday.com/story/news/nation/2020/03/30/coronavirus-stay-home-shelter-in-place-orders-by-state/5092413002/
+16,3/25/20,Order to Self-Isolate,https://www.usatoday.com/story/news/nation/2020/03/30/coronavirus-stay-home-shelter-in-place-orders-by-state/5092413002/
+17,3/21/20,Stay-at-home,https://www.usatoday.com/story/news/nation/2020/03/30/coronavirus-stay-home-shelter-in-place-orders-by-state/5092413002/
+18,3/23/20,Hoosiers hunker down,https://www.usatoday.com/story/news/nation/2020/03/30/coronavirus-stay-home-shelter-in-place-orders-by-state/5092413002/
+20,3/28/20,Stay-at-home,https://www.usatoday.com/story/news/nation/2020/03/30/coronavirus-stay-home-shelter-in-place-orders-by-state/5092413002/
+21,3/25/20,Stay-at-home suggestion,https://www.usatoday.com/story/news/nation/2020/03/30/coronavirus-stay-home-shelter-in-place-orders-by-state/5092413002/
+21,3/30/20,Stay-at-home mandate,https://www.usatoday.com/story/news/nation/2020/03/30/coronavirus-stay-home-shelter-in-place-orders-by-state/5092413002/
+22,3/23/20,Stay-at-home,https://www.usatoday.com/story/news/nation/2020/03/30/coronavirus-stay-home-shelter-in-place-orders-by-state/5092413002/
+23,3/31/20,Stay-at-home announced,https://www.usatoday.com/story/news/nation/2020/03/30/coronavirus-stay-home-shelter-in-place-orders-by-state/5092413002/
+23/4/2/20,Stay-at-home in effect,https://www.usatoday.com/story/news/nation/2020/03/30/coronavirus-stay-home-shelter-in-place-orders-by-state/5092413002/
+24,3/30/20,Stay-at-home,https://www.usatoday.com/story/news/nation/2020/03/30/coronavirus-stay-home-shelter-in-place-orders-by-state/5092413002/
+25,3/24/20,Stay-at-home,https://www.usatoday.com/story/news/nation/2020/03/30/coronavirus-stay-home-shelter-in-place-orders-by-state/5092413002/
+26,3/23/20,Stay-at-home,https://www.usatoday.com/story/news/nation/2020/03/30/coronavirus-stay-home-shelter-in-place-orders-by-state/5092413002/
+27,3/25/20,Stay-at-home,https://www.usatoday.com/story/news/nation/2020/03/30/coronavirus-stay-home-shelter-in-place-orders-by-state/5092413002/
+28,4/1/20,Stay-at-home,https://www.usatoday.com/story/news/nation/2020/03/30/coronavirus-stay-home-shelter-in-place-orders-by-state/5092413002/
+28,3/31/20,Stay-at-home for Lauderdale County only from Gov.,https://www.usatoday.com/story/news/nation/2020/03/30/coronavirus-stay-home-shelter-in-place-orders-by-state/5092413002/
+29,4/3/20,“Stay Home Missouri”,https://governor.mo.gov/priorities/stay-home-order
+30,3/26/20,Stay-at-home announced,https://www.usatoday.com/story/news/nation/2020/03/30/coronavirus-stay-home-shelter-in-place-orders-by-state/5092413002/
+30,3/28/20, Stay-at-home in effect,https://www.usatoday.com/story/news/nation/2020/03/30/coronavirus-stay-home-shelter-in-place-orders-by-state/5092413002/
+31,4/3/20,Limit gatherings and closing dining rooms,https://www.usatoday.com/story/news/nation/2020/03/30/coronavirus-stay-home-shelter-in-place-orders-by-state/5092413002/
+32,4/1/20,Stay-at-home,https://www.usatoday.com/story/news/nation/2020/03/30/coronavirus-stay-home-shelter-in-place-orders-by-state/5092413002/
+33,3/27/20,Stay-at-home,https://www.usatoday.com/story/news/nation/2020/03/30/coronavirus-stay-home-shelter-in-place-orders-by-state/5092413002/
+34,3/21/20,Stay-at-home,https://www.usatoday.com/story/news/nation/2020/03/30/coronavirus-stay-home-shelter-in-place-orders-by-state/5092413002/
+35,3/23/20,Public health order closing non-essential biz,https://www.usatoday.com/story/news/nation/2020/03/30/coronavirus-stay-home-shelter-in-place-orders-by-state/5092413002/
+36,3/20/20,Stay-at-home,https://www.usatoday.com/story/news/nation/2020/03/30/coronavirus-stay-home-shelter-in-place-orders-by-state/5092413002/
+37,3/27/20,Stay-at-home,https://www.usatoday.com/story/news/nation/2020/03/30/coronavirus-stay-home-shelter-in-place-orders-by-state/5092413002/
+38,3/19/20,Close non-essential biz,https://www.kfyrtv.com/content/news/Closed-until-further-notice-568949891.html
+39,3/23/20,Stay-at-home,https://www.usatoday.com/story/news/nation/2020/03/30/coronavirus-stay-home-shelter-in-place-orders-by-state/5092413002/
+40,3/24/20,Safer at Home order for elderly and immuno-defiecient,https://www.usatoday.com/story/news/nation/2020/03/30/coronavirus-stay-home-shelter-in-place-orders-by-state/5092413002/
+41,3/20/20,Stay-at-home directive,https://www.usatoday.com/story/news/nation/2020/03/30/coronavirus-stay-home-shelter-in-place-orders-by-state/5092413002/
+41,3/23/20,Stay-at-home mandate,https://www.usatoday.com/story/news/nation/2020/03/30/coronavirus-stay-home-shelter-in-place-orders-by-state/5092413002/
+42,3/23/20,Stay-at-home for 7 counties,https://www.usatoday.com/story/news/nation/2020/03/30/coronavirus-stay-home-shelter-in-place-orders-by-state/5092413002/
+42,4/1/20,Stay-at-home for whole state,https://www.usatoday.com/story/news/nation/2020/03/30/coronavirus-stay-home-shelter-in-place-orders-by-state/5092413002/
+44,3/28/20,Stay-at-home,https://www.usatoday.com/story/news/nation/2020/03/30/coronavirus-stay-home-shelter-in-place-orders-by-state/5092413002/
+45,4/7/20,Stay-at-home,https://www.usatoday.com/story/news/nation/2020/03/30/coronavirus-stay-home-shelter-in-place-orders-by-state/5092413002/
+47,3/30/20,Safer-at-home,https://www.usatoday.com/story/news/nation/2020/03/30/coronavirus-stay-home-shelter-in-place-orders-by-state/5092413002/
+48,3/31/20,Stay-at-home in all but name,https://www.usatoday.com/story/news/nation/2020/03/30/coronavirus-stay-home-shelter-in-place-orders-by-state/5092413002/
+49,3/27/20,Loose directives,https://www.usatoday.com/story/news/nation/2020/03/30/coronavirus-stay-home-shelter-in-place-orders-by-state/5092413002/
+50,3/25/20,Stay-at-home,https://www.usatoday.com/story/news/nation/2020/03/30/coronavirus-stay-home-shelter-in-place-orders-by-state/5092413002/
+51,3/30/20,Stay-at-home,https://www.usatoday.com/story/news/nation/2020/03/30/coronavirus-stay-home-shelter-in-place-orders-by-state/5092413002/
+53,3/23/20,Stay-at-home,https://www.usatoday.com/story/news/nation/2020/03/30/coronavirus-stay-home-shelter-in-place-orders-by-state/5092413002/
+54,3/24/20,Safer-at-home,https://www.usatoday.com/story/news/nation/2020/03/30/coronavirus-stay-home-shelter-in-place-orders-by-state/5092413002/
+All,3/13/20,Europe Travel ban,https://nypost.com/2020/03/11/trump-suspends-travel-from-europe-over-coronavirus-fears/
+All,3/16/20,UK Travel ban,
+26,4/15/20,#OperationGridlock,
+25,2/26/20,Biogen Meeting,
+All,3/11/20,Sports Shut Down,
+55,4/8/20,Primary Election,
+12,4/17/20,#FloridaMorons Re-open some beaches, https://www.newsweek.com/florida-beaches-florida-moron-twitter-1498750
