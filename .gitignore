@@ -1,3 +1,4 @@
 
 .ipynb_checkpoints/Covid-checkpoint.ipynb
 *.pyc
+.ipynb_checkpoints/CovidFunctionsPlotly-checkpoint.py
