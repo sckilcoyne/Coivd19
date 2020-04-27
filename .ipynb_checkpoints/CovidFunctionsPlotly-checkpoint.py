@@ -579,7 +579,7 @@ def figures_to_html(figs, filename):
     dashboard.write("</body></html>" + "\n")
     
 def githubIndex(dfStateData, fipsList):
-    githubURL = 'https://sckilcoyne.github.io/Coivd19/figs/'
+    githubURL = 'https://sckilcoyne.github.io/Coivd19/'
     fileName = 'index.md'
     
     indexFile = open(fileName, 'w')
