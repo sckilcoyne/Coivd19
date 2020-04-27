@@ -1,7 +1,8 @@
 import pandas as pd
 import numpy as np
 # import matplotlib.pyplot as plt 
- 
+from datetime import datetime, timedelta
+
 import matplotlib.ticker as mtick
 from matplotlib.ticker import FormatStrFormatter
 import plotly
@@ -9,6 +10,9 @@ import plotly.express as px
 import plotly.graph_objects as go
 import plotly.figure_factory as ff
 import plotly.offline as pyo
+
+figHeight = 600
+figWidth = 800
 
 def correlations(shiftSearch, dfCovid, fipsList):
     shiftHeadings = []
@@ -59,36 +63,28 @@ def state_plot(dfCovid, dfShiftCor, dfStateData, dfEvents, fips, plotDateRange):
     if str(fips).zfill(2) in dfEvents.groupby('FIPS').groups.keys():
         dfEventsState = dfEventsAll.append(dfEvents.groupby('FIPS').get_group(str(fips).zfill(2)))
     else:
-        dfEventsState = dfEventsAll
-
-    # Create Figure with subplots
-    plotCols = 3
-    plotRows = 3      
+        dfEventsState = dfEventsAll    
     
     # Tracking Plots
-    figTrackingRaw = tracking_plot(dfCovid, fips)
-    figTrackingLog = tracking_plot(dfCovid, fips)
-    figTrackingLog.update_layout(yaxis_type="log")
+    figTrackingRaw = tracking_plot(dfCovid, fips, plotDateRange)
     
     # R effective estimate plot
-    figReffective = r_effective_plot(dfCovid, fips)
+    figReffective = r_effective_plot(dfCovid, fips, plotDateRange)
     
     # Correlation Plot
     figCorrelation = correlation_plot(dfShiftCor, fips)
     
     # Daily Testing Plot
-    figDailyTesting = daily_testing_plot(dfCovid, fips)
+    figDailyTesting = daily_testing_plot(dfCovid, fips, plotDateRange)
     
     # Testing Growth Plot
-    figTestingGrow = testing_growth_plot(dfCovid, fips)
+    figTestingGrow = testing_growth_plot(dfCovid, fips, plotDateRange)
     
     # Percent Positive Plot
-    figTestPercent = percent_poisitve_plot(dfCovid, fips)
+    figTestPercent = percent_poisitve_plot(dfCovid, fips, plotDateRange)
     
     # Resource Usage Plots
-    figResourceRaw = resource_usage_plot(dfCovid, fips)
-    figResourceLog = resource_usage_plot(dfCovid, fips)
-    figResourceLog.update_layout(yaxis_type="log")
+    figResourceRaw = resource_usage_plot(dfCovid, fips, plotDateRange)
     
     # Add per capita axis
     perCapFig = [figDailyTesting, figTestingGrow]
@@ -98,27 +94,20 @@ def state_plot(dfCovid, dfShiftCor, dfStateData, dfEvents, fips, plotDateRange):
         fig = per_capita_axis(fig, dfStateData, fips)
         
     # Add event markers
-#     for ax in [axTrackingRaw, axTrackingLog, axReffectEsti]:
-#         event_markers(ax, dfEventsState)
-        
-    # Set X limits
-    xlimFig = [figTrackingRaw, figTrackingLog, figReffective, figDailyTesting, 
-              figTestPercent, figTestingGrow, figResourceRaw, figResourceLog]
-    for fig in xlimFig:
-        fig.update_layout(xaxis_range = plotDateRange)
-#         ax.set(xlim = plotDateRange)
+    for fig in [figTrackingRaw, figReffective]:
+        fig = event_markers(fig, dfEventsState)
         
     # Overall figure formatting     
-    figList = [figTrackingRaw, figTrackingLog, figReffective, 
-               figCorrelation, figDailyTesting,figTestingGrow,
-               figTestPercent, figResourceRaw, figResourceLog]
+    figList = [figTrackingRaw, figReffective, 
+               figDailyTesting, figTestPercent, figTestingGrow,
+               figResourceRaw, figCorrelation]
     htmlFile = 'figs/Tracking Data ' + dfStateData.at[str(fips).zfill(2), 'State'] + '.html'
     figures_to_html(figList, htmlFile)
 
     
     
 # def tracking_plot(fig, dfCovid, fips):
-def tracking_plot(dfCovid, fips):
+def tracking_plot(dfCovid, fips, plotDateRange):
     fig = go.Figure()
     fig.add_trace(go.Scatter(x = dfCovid.loc[fips]['positive_cases'].index, y = dfCovid.loc[fips]['positive_cases'],
                              mode='lines',
@@ -136,6 +125,10 @@ def tracking_plot(dfCovid, fips):
     inflections = inflection_points(cases)
     fig.add_trace(go.Scatter(x = cases.index[inflections], y = cases[inflections],
                              mode='markers',
+#                              marker_color = 'red',
+                             marker_line_color = 'red',
+                             marker_symbol = 'x-thin',
+                             marker_line_width=2,
                              name='Case Inflection Points'))
     
     fig.add_trace(go.Scatter(x = dfCovid.loc[fips]['deaths'].index, y = dfCovid.loc[fips]['deaths'],
@@ -188,15 +181,62 @@ def tracking_plot(dfCovid, fips):
 
     # Fig formatting
     fig.update_layout(
-        title = 'Cumulative Tracking Data',
-        template = "plotly_dark",
+        title = {
+            'text':'Cumulative Tracking Data',
+            'x':0.5,
+            'xanchor': 'center'},
         showlegend = True,
-        legend_orientation = "h",
         legend_font_size = 10,
-        margin=dict(l=20, r=20, t=30, b=20))
+        margin=dict(l=20, r=20, t=30, b=20),
+        height = figHeight,
+        width = figWidth,
+        hovermode = 'x unified',
+        # Add y scale button
+        # https://community.plotly.com/t/set-linear-or-log-axes-from-button-or-drop-down-menu-python/34927/2
+        updatemenus=[dict(
+            type = "buttons",
+            direction = 'left',
+            buttons=list([
+                dict(
+                    args=[{"yaxis.type": "linear"}],
+                    label="Linear Y",
+                    method="relayout"),
+                dict(
+                    args=[{"yaxis.type": "log"}],
+                    label="Log Y",
+                    method="relayout")
+                ]),
+    #     pad={"r": 10, "t": 10},
+        showactive = False,
+        x = 0.2,
+        xanchor = 'right',
+        y = 1.1,
+        yanchor = "bottom")],
+        # Add range slider
+        # https://github.com/plotly/plotly.py/issues/828
+        xaxis=dict(
+            range = plotDateRange,
+            rangeselector=dict(
+                buttons=list([
+                    dict(count=1,
+                         label="1m",
+                         step="month",
+                         stepmode="backward"),
+                    dict(count=2,
+                         label="2m",
+                         step="month",
+                         stepmode="backward"),
+#                     dict(step="all")
+                ])
+            ),
+            rangeslider=dict(
+                visible=True,
+                range = plotDateRange),
+            type="date"))
+
     return fig
     
-def r_effective_plot(dfCovid, fips):
+def r_effective_plot(dfCovid, fips, plotDateRange):
     fig = go.Figure()
     
     tObserved = [1, 3, 7]
@@ -222,14 +262,38 @@ def r_effective_plot(dfCovid, fips):
     
     # Fig formatting
     fig.update_layout(
-        title = 'Estimated R',
+        title = {
+            'text':'Estimated R',
+            'x':0.5,
+            'xanchor': 'center'},
         yaxis_type = "log",
-        yaxis_range = [-.2, .8],
-        template = "plotly_dark",
+        yaxis_range = [np.log10(0.6), np.log10(6)],
         showlegend = True,
-        legend_orientation = "h",
-        margin=dict(l=20, r=20, t=30, b=20))
-# #         xlim = [firstDate, currentDate],
+        margin=dict(l=20, r=20, t=30, b=20),
+        height = figHeight,
+        width = figWidth,
+        hovermode = 'x unified',
+        # Add range slider
+        # https://github.com/plotly/plotly.py/issues/828
+        xaxis=dict(
+            range = plotDateRange,
+            rangeselector=dict(
+                buttons=list([
+                    dict(count=1,
+                         label="1m",
+                         step="month",
+                         stepmode="backward"),
+                    dict(count=2,
+                         label="2m",
+                         step="month",
+                         stepmode="backward"),
+#                     dict(step="all")
+                ])
+            ),
+            rangeslider=dict(
+                visible=True,
+                range = plotDateRange),
+            type="date"))
     
     return fig
     
@@ -260,17 +324,21 @@ def correlation_plot(dfShiftCor, fips):
         
     # Fig formatting
     fig.update_layout(
-        title = 'Cases related to X days later',
+        title = {
+            'text':'Cases related to X days later',
+            'x':0.5,
+            'xanchor': 'center'},
         yaxis_range = [0.7, 1],
-#         xaxis_title = 'Days Later',
-        template = "plotly_dark",
         showlegend = True,
         legend_orientation = "h",
-        margin=dict(l=20, r=20, t=30, b=20))
+        margin=dict(l=20, r=20, t=30, b=20),
+        height = figHeight,
+        width = figWidth,
+        hovermode = 'x unified')
 #     fig.show()
     return fig
     
-def daily_testing_plot(dfCovid, fips):
+def daily_testing_plot(dfCovid, fips, plotDateRange):
     dailyTesting = dfCovid.loc[fips]['positive_cases'].diff() + dfCovid.loc[fips]['negative(CTP)'].diff()
     dates = dfCovid.loc[fips].index
     
@@ -294,17 +362,42 @@ def daily_testing_plot(dfCovid, fips):
     
     # Fig formatting
     fig.update_layout(
-        title = 'Daily Testing',
+        title = {
+            'text':'Daily Testing',
+            'x':0.5,
+            'xanchor': 'center'},
         yaxis_range = [fig_ymin, fig_ymax],
-        template = "plotly_dark",
         showlegend = True,
-        legend_orientation = "h",
-        margin=dict(l=20, r=20, t=30, b=20))
+        margin=dict(l=20, r=20, t=30, b=20),
+        height = figHeight,
+        width = figWidth,
+        hovermode = 'x unified',
+        # Add range slider
+        # https://github.com/plotly/plotly.py/issues/828
+        xaxis=dict(
+            range = plotDateRange,
+            rangeselector=dict(
+                buttons=list([
+                    dict(count=1,
+                         label="1m",
+                         step="month",
+                         stepmode="backward"),
+                    dict(count=2,
+                         label="2m",
+                         step="month",
+                         stepmode="backward"),
+#                     dict(step="all")
+                ])
+            ),
+            rangeslider=dict(
+                visible=True,
+                range = plotDateRange),
+            type="date"))
 #     fig.show()
     return fig
     
     
-def testing_growth_plot(dfCovid, fips):
+def testing_growth_plot(dfCovid, fips, plotDateRange):
     fig = go.Figure()
 #     ax.axhline(y=0, color='dimgray', linewidth = 1)
     
@@ -331,17 +424,42 @@ def testing_growth_plot(dfCovid, fips):
     
     # Fig formatting
     fig.update_layout(
-        title = 'Testing Growth',
+        title = {
+            'text':'Testing Growth',
+            'x':0.5,
+            'xanchor': 'center'},
         yaxis_range = [fig_ymin, fig_ymax],
-        template = "plotly_dark",
         showlegend = True,
-        legend_orientation = "h",
-        margin=dict(l=20, r=20, t=30, b=20))
+        margin=dict(l=20, r=20, t=30, b=20),
+        height = figHeight,
+        width = figWidth,
+        hovermode = 'x unified',
+        # Add range slider
+        # https://github.com/plotly/plotly.py/issues/828
+        xaxis=dict(
+            range = plotDateRange,
+            rangeselector=dict(
+                buttons=list([
+                    dict(count=1,
+                         label="1m",
+                         step="month",
+                         stepmode="backward"),
+                    dict(count=2,
+                         label="2m",
+                         step="month",
+                         stepmode="backward"),
+#                     dict(step="all")
+                ])
+            ),
+            rangeslider=dict(
+                visible=True,
+                range = plotDateRange),
+            type="date"))
                 
 #     fig.show()
     return fig
     
-def percent_poisitve_plot(dfCovid, fips):
+def percent_poisitve_plot(dfCovid, fips, plotDateRange):
     dates = dfCovid.loc[fips].index
     totalTests = dfCovid.loc[fips]['positive_cases'] + dfCovid.loc[fips]['negative(CTP)']
     percentPositive = dfCovid.loc[fips]['positive_cases'] / totalTests
@@ -379,17 +497,42 @@ def percent_poisitve_plot(dfCovid, fips):
         
     # Fig formatting
     fig.update_layout(
-        title = 'Positive Test Results',
+        title = {
+            'text':'Positive Test Results',
+            'x':0.5,
+            'xanchor': 'center'},
         yaxis_tickformat = '1%',
         yaxis_range = [0, 0.6],
-        template = "plotly_dark",
         showlegend = True,
-        legend_orientation = "h",
-        margin=dict(l=20, r=20, t=30, b=20))
+        margin=dict(l=20, r=20, t=30, b=20),
+        height = figHeight,
+        width = figWidth,
+        hovermode = 'x unified',
+        # Add range slider
+        # https://github.com/plotly/plotly.py/issues/828
+        xaxis=dict(
+            range = plotDateRange,
+            rangeselector=dict(
+                buttons=list([
+                    dict(count=1,
+                         label="1m",
+                         step="month",
+                         stepmode="backward"),
+                    dict(count=2,
+                         label="2m",
+                         step="month",
+                         stepmode="backward"),
+#                     dict(step="all")
+                ])
+            ),
+            rangeslider=dict(
+                visible=True,
+                range = plotDateRange),
+            type="date"))
 #     fig.show()
     return fig
     
-def resource_usage_plot(dfCovid, fips):
+def resource_usage_plot(dfCovid, fips, plotDateRange):
     plots = False
     dates = dfCovid.loc[fips].index
     fig = go.Figure()
@@ -412,17 +555,67 @@ def resource_usage_plot(dfCovid, fips):
     
     if plots:
         fig.update_layout(
-            title = 'Current Resource Usuage')
+            title = {
+                'text':'Current Resource Usuage',
+                'x':0.5,
+                'xanchor': 'center'})
     else:
         fig.update_layout(
-            title = 'No data on Resource Usuage')
-        
+            title = {
+                'text':'No data on Resource Usuage',
+                'x':0.5,
+                'xanchor': 'center'})
+    
     # Fig formatting
     fig.update_layout(
-        template = "plotly_dark",
         showlegend = True,
-        legend_orientation = "h",
-        margin=dict(l=20, r=20, t=30, b=20))
+        margin=dict(l=20, r=20, t=30, b=20),
+        height = figHeight,
+        width = figWidth,
+        hovermode = 'x unified',
+        # Add y scale button
+        # https://community.plotly.com/t/set-linear-or-log-axes-from-button-or-drop-down-menu-python/34927/2
+        updatemenus=[dict(
+            type = "buttons",
+            direction = 'left',
+            buttons=list([
+                dict(
+                    args=[{"yaxis.type": "linear"}],
+                    label="Linear Y",
+                    method="relayout"),
+                dict(
+                    args=[{"yaxis.type": "log"}],
+                    label="Log Y",
+                    method="relayout")
+                ]),
+        showactive=False,
+        x=0.2,
+        xanchor="left",
+        y=1,
+        yanchor="top")],
+        # Add range slider
+        # https://github.com/plotly/plotly.py/issues/828
+        xaxis=dict(
+            range = plotDateRange,
+            rangeselector=dict(
+                buttons=list([
+                    dict(count=1,
+                         label="1m",
+                         step="month",
+                         stepmode="backward"),
+                    dict(count=2,
+                         label="2m",
+                         step="month",
+                         stepmode="backward"),
+#                     dict(step="all")
+                ])
+            ),
+            rangeslider=dict(
+                visible=True,
+                range = plotDateRange),
+            type="date"))
+    
+
 #     fig.show()
     return fig
     
@@ -467,16 +660,45 @@ def per_capita_axis(fig, dfStateData, fips):
     
     return fig
         
-def event_markers(ax, dfEventsState):
-    # Add Event markers
-    ymin, ymax = ax.get_ylim()
-    ytext = ymin
-    arrowprops = {'width': 1, 'headwidth': 1, 'headlength': 1, 'shrink':0.05}
-    bbox = dict(facecolor = '1', edgecolor = 'none', alpha = 0.8, pad = 0)
+def event_markers(fig, dfEventsState):
+    
+    annotates = []
     for index, eventData in dfEventsState.iterrows():
-        ax.axvline(eventData['Date'], color = 'gray', linestyle = ':')
-        ax.annotate('  ' + eventData['Event'], xy=(eventData['Date'],ytext), xytext=(-5,0), textcoords='offset points',
-                    rotation=90, va='bottom', ha='center', annotation_clip=False, arrowprops=arrowprops, bbox=bbox)
+        date = datetime.strptime(eventData['Date'], '%m/%d/%y')
+        fig.add_shape(type = 'line',
+                      xref = 'x',
+                      yref = 'paper',
+                      x0 = date,
+                      y0 = 0,
+                      x1 = date,
+                      y1 = 1,
+                      line = dict(
+                          color = 'Black',
+                          width = 1))
+        annotates = annotates + [dict(text = eventData['Event'],
+                                     x = date,
+                                     y = 0.1,
+                                     yref = 'paper',
+                                     textangle = -90,
+                                     font_size = 10,
+                                     opacity=1,
+                                     showarrow = False,
+                                     bgcolor = 'white')]
+
+
+    fig.update_layout(annotations = annotates)
+    
+    return fig
+    
+#     # Add Event markers
+#     ymin, ymax = ax.get_ylim()
+#     ytext = ymin
+#     arrowprops = {'width': 1, 'headwidth': 1, 'headlength': 1, 'shrink':0.05}
+#     bbox = dict(facecolor = '1', edgecolor = 'none', alpha = 0.8, pad = 0)
+#     for index, eventData in dfEventsState.iterrows():
+#         ax.axvline(eventData['Date'], color = 'gray', linestyle = ':')
+#         ax.annotate('  ' + eventData['Event'], xy=(eventData['Date'],ytext), xytext=(-5,0), textcoords='offset points',
+#                     rotation=90, va='bottom', ha='center', annotation_clip=False, arrowprops=arrowprops, bbox=bbox)
         
 def hyst(x, th_lo, th_hi, initial = False):
     """
@@ -556,10 +778,10 @@ def figures_to_html(figs, filename):
                     "}" + "\n" + 
                     ".plotly-graph-div {" + "\n" + 
                     "float: left;" + "\n" + 
-                    "max-width: 625px;" + "\n" + 
-                    "max-height: 50%;" + "\n" + 
-                    "min-width: 32%;" + "\n" + 
-                    "min-height: 300px;" + "\n" + 
+#                     "max-width: 625px;" + "\n" + 
+#                     "max-height: 50%;" + "\n" + 
+#                     "min-width: 32%;" + "\n" + 
+#                     "min-height: 300px;" + "\n" + 
                     "}" + "\n" + 
                     "</style></head><body>" + "\n" +
                     "<div class=\"header\">"  + "\n" +
