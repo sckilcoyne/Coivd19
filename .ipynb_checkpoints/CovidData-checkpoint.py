@@ -25,6 +25,7 @@ def clean_data(dfRaw):
     
     #  Move fips to second column
     removeFIPS = np.add(np.where(cols == 'fips'), 1)
+#     cols = np.delete(cols, np.where(cols == 'fips'))
     cols = np.insert(cols,1,'fips')
     cols = np.delete(cols, removeFIPS)
     dfClean = dfRaw[cols]
