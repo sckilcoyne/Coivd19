@@ -66,7 +66,7 @@ def state_plot(dfCovid, dfShiftCor, dfStateData, dfEvents, fips, plotDateRange):
         dfEventsState = dfEventsAll    
     
     # Tracking Plots
-    figTrackingRaw = tracking_plot(dfCovid, fips, plotDateRange)
+    figTrackingRaw = tracking_plot(dfCovid, fips, plotDateRange, dfStateData)
     
     # R effective estimate plot
     figReffective = r_effective_plot(dfCovid, fips, plotDateRange)
@@ -105,85 +105,201 @@ def state_plot(dfCovid, dfShiftCor, dfStateData, dfEvents, fips, plotDateRange):
     figures_to_html(figList, htmlFile)
 
     
-    
-# def tracking_plot(fig, dfCovid, fips):
-def tracking_plot(dfCovid, fips, plotDateRange):
+def tracking_plot(dfCovid, fips, plotDateRange, dfStateData):
     fig = go.Figure()
-    fig.add_trace(go.Scatter(x = dfCovid.loc[fips]['positive_cases'].index, y = dfCovid.loc[fips]['positive_cases'],
-                             mode='lines',
-                             name='Reported Cases (NYT, CTP)'))
-    fig.add_trace(go.Scatter(x = dfCovid.loc[fips]['cases(NYT)'].index, y = dfCovid.loc[fips]['cases(NYT)'],
-                             mode='markers',
-                             name='Reported Cases  (NYT)',
-                             visible='legendonly'))
-    fig.add_trace(go.Scatter(x = dfCovid.loc[fips]['positive(CTP)'].index, y = dfCovid.loc[fips]['positive(CTP)'],
-                             mode='markers',
-                             name='Reported Cases  (CTP)',
-                             visible='legendonly'))
-     
-    cases = dfCovid.loc[fips]['positive_cases'].copy()
-    inflections = inflection_points(cases)
-    fig.add_trace(go.Scatter(x = cases.index[inflections], y = cases[inflections],
-                             mode='markers',
-#                              marker_color = 'red',
-                             marker_line_color = 'red',
-                             marker_symbol = 'x-thin',
-                             marker_line_width=2,
-                             name='Case Inflection Points'))
-    
-    fig.add_trace(go.Scatter(x = dfCovid.loc[fips]['deaths'].index, y = dfCovid.loc[fips]['deaths'],
-                             mode='lines',
-                             name='Deaths (NYT, CTP)'))
-    fig.add_trace(go.Scatter(x = dfCovid.loc[fips]['deaths(NYT)'].index, y = dfCovid.loc[fips]['deaths(NYT)'],
-                             mode='markers',
-                             name='Deaths (NYT)',
-                             visible='legendonly'))
-    fig.add_trace(go.Scatter(x = dfCovid.loc[fips]['death(CTP)'].index, y = dfCovid.loc[fips]['death(CTP)'],
-                             mode='markers',
-                             name='Deaths (CTP)',
-                             visible='legendonly'))
-    
-    if dfCovid.loc[fips]['hospitalizedCumulative(CTP)'].sum() > 0:
+    dates = dfCovid.loc[fips].index
+    pop = int(dfStateData.at[str(fips).zfill(2), 'Population'])
+    capita = 10000
+
+    titleBase = 'Tracking Data - '
+    plotOptions = ['Cumulative', 'Cumulative per 10,000', 'Daily', 'Daily per 10,000']
+    scalingFactor = [1, capita / pop, 1, capita / pop]
+    diff = [False, False, True, True]
+    sourceList = ['(NYT, CTP)', '(NYT)', '(CTP)']
+    sourceMarker = ['circle', 'y-up', 'y-down']
+
+    for i, plot in enumerate(plotOptions):
+        optionalPlots = 0
+        # Cases
+        for s, source in enumerate(['positive_cases', 'cases(NYT)', 'positive(CTP)']):
+            cases = dfCovid.loc[fips][source] * scalingFactor[i]
+            if diff[i]:
+                cases = cases.diff().rolling(7, min_periods = 1, center = True, win_type = 'triang').mean()
+            if s < 1:
+                mode = 'lines'
+            else:
+                mode = 'markers'
+            fig.add_trace(go.Scatter(x = dates, y = cases,
+                                     mode = mode,
+                                     line_color = 'blue',
+                                     marker_line_color = 'blue',
+                                     marker_symbol = sourceMarker[s],
+                                     marker_line_width = 1,
+                                     name='Reported Cases ' + sourceList[s],
+                                     visible = False))    
+         # Deaths
+        for s, source in enumerate(['deaths', 'deaths(NYT)', 'death(CTP)']):
+            cases = dfCovid.loc[fips][source] * scalingFactor[i]
+            if diff[i]:
+                cases = cases.diff().rolling(7, min_periods = 1, center = True, win_type = 'triang').mean()
+            if s < 1:
+                mode = 'lines'
+            else:
+                mode = 'markers'
+            fig.add_trace(go.Scatter(x = dates, y = cases,
+                                     mode=mode,
+                                     line_color = 'orange',
+                                     marker_line_color = 'orange',
+                                     marker_symbol = sourceMarker[s],
+                                     marker_line_width = 1,
+                                     name='Deaths ' + sourceList[s],
+                                     visible = False)) 
+
         hospitalized = dfCovid.loc[fips]['hospitalizedCumulative(CTP)']
-        fig.add_trace(go.Scatter(x = hospitalized.index, y = hospitalized,
-                                 mode='lines',
-                                 name='Hospitalized Cum. (CTP)'))        
-    if dfCovid.loc[fips]['inIcuCumulative(CTP)'].sum() > 0:
-        fig.add_trace(go.Scatter(x = dfCovid.loc[fips]['inIcuCumulative(CTP)'].index, y = dfCovid.loc[fips]['inIcuCumulative(CTP)'],
-                                 mode='lines',
-                                 name='ICU Cum. (CTP)')) 
-    if dfCovid.loc[fips]['onVentilatorCumulative(CTP)'].sum() > 0:
+        inICU = dfCovid.loc[fips]['inIcuCumulative(CTP)']
         onVent = dfCovid.loc[fips]['onVentilatorCumulative(CTP)']
-        fig.add_trace(go.Scatter(x = onVent.index, y = onVent,
+        recover = dfCovid.loc[fips]['recovered(CTP)']
+
+        if hospitalized.sum() > 0:
+            hospitalized = hospitalized * scalingFactor[i]
+            if diff[i]:
+                hospitalized = hospitalized.diff().rolling(7, min_periods = 1, center = True, win_type = 'triang').mean()
+            fig.add_trace(go.Scatter(x = dates, y = hospitalized,
+                                     mode='lines',
+                                     name='Hospitalized (CTP)',
+                                     visible = False)) 
+            optionalPlots = optionalPlots + 1
+        if inICU.sum() > 0:
+            inICU = inICU * scalingFactor[i]
+            if diff[i]:
+                inICU = inICU.diff().rolling(7, min_periods = 1, center = True, win_type = 'triang').mean()
+            fig.add_trace(go.Scatter(x = dates, y = inICU,
+                                     mode='lines',
+                                     name='ICU (CTP)',
+                                     visible = False)) 
+            optionalPlots = optionalPlots + 1
+        if onVent.sum() > 0:
+            onVent = onVent * scalingFactor[i]
+            if diff[i]:
+                onVent = onVent.diff().rolling(7, min_periods = 1, center = True, win_type = 'triang').mean()
+            fig.add_trace(go.Scatter(x = dates, y = onVent,
+                                     mode='lines',
+                                     name='Ventilator (CTP)',
+                                     visible = False))
+            optionalPlots = optionalPlots + 1
+        if recover.sum() > 0:
+            recover = recover * scalingFactor[i]
+            if diff[i]:
+                recover = recover.diff().rolling(7, min_periods = 1, center = True, win_type = 'triang').mean()
+            fig.add_trace(go.Scatter(x = dates, y = recover,
+                                     mode='lines',
+                                     name='Recovered (CTP)',
+                                     visible = False))
+            optionalPlots = optionalPlots + 1
+
+
+
+    # Case Inflection Points 
+    cases = dfCovid.loc[fips]['positive_cases'].copy()    
+    inflections = inflection_points(cases)
+
+    plotNames = [fig.data[i].name for i in range(len(fig.data))]
+    indexPosList = []
+    indexPos = 0
+    while True:
+        try:
+            # Search for item in list from indexPos to the end of list
+            indexPos = plotNames.index('Reported Cases (NYT, CTP)', indexPos)
+            # Add the index position in list
+            indexPosList.append(indexPos)
+            indexPos += 1
+        except ValueError as e:
+            break
+
+    xData = cases.index[inflections]
+    for casePlots in indexPosList:
+        yData = fig.data[casePlots].y[inflections]    
+        fig.add_trace(go.Scatter(x = xData, y = yData,
+                                 mode='markers',
+                                 marker_line_color = 'red',
+                                 marker_symbol = 'x-thin',
+                                 marker_line_width=2,
+                                 name='Case Inflection Points'))
+
+
+
+    # Reported de-active  
+    recoverPosList = []
+    recoverPos = 0
+    while True:
+        try:
+            # Search for item in list from indexPos to the end of list
+            recoverPos = plotNames.index('Recovered (CTP)', recoverPos)
+            # Add the index position in list
+            recoverPosList.append(recoverPos)
+            recoverPos += 1
+        except ValueError as e:
+            break
+
+    deathPosList = []
+    deathPos = 0
+    while True:
+        try:
+            # Search for item in list from indexPos to the end of list
+            deathPos = plotNames.index('Deaths (NYT, CTP)', deathPos)
+            # Add the index position in list
+            deathPosList.append(deathPos)
+            deathPos += 1
+        except ValueError as e:
+            break
+
+    for i in range(len(deathPosList)):
+        deaths = fig.data[deathPosList[i]].y
+
+        if len(recoverPosList) > 0:
+            recovered = fig.data[recoverPosList[i]].y
+            recovered[np.isnan(recovered)] = 0    
+            knownNonActive = np.add(deaths, recovered)
+        else:
+            knownNonActive = deaths
+        posLessDeadRecov = fig.data[indexPosList[i]].y - knownNonActive
+        fig.add_trace(go.Scatter(x = fig.data[deathPosList[i]].x, y = posLessDeadRecov,
                                  mode='lines',
-                                 name='Ventilator Cum. (CTP)')) 
-    if dfCovid.loc[fips]['recovered(CTP)'].sum() > 0:
-        fig.add_trace(go.Scatter(x = dfCovid.loc[fips]['recovered(CTP)'].index, y = dfCovid.loc[fips]['recovered(CTP)'],
-                                 mode='lines',
-                                 name='Recovered (CTP)')) 
-    # Reported de-active        
-    recovered = dfCovid.loc[fips]['recovered(CTP)'].copy()
-    recovered[np.isnan(recovered)] = 0
-    knownNonActive = np.add(dfCovid.loc[fips]['deaths'], recovered)
-    upperLimitActive = dfCovid.loc[fips]['positive_cases'] - knownNonActive
-    fig.add_trace(go.Scatter(x = upperLimitActive.index, y = upperLimitActive,
-                             mode='lines',
-                             name='Positive less Recovered and Dead'))
+                                 name='Positive less Recovered and Dead'))
 
     # Estimated Active
-    estActive = pd.DataFrame(dfCovid.loc[fips]['positive_cases']).reset_index()
-    estActive['date'] = estActive['date'] + pd.Timedelta(days = 14)
-    estActive = estActive.set_index(['date'])
-    estActive['est_active'] = dfCovid.loc[fips]['positive_cases'] - estActive['positive_cases']
-    fig.add_trace(go.Scatter(x = estActive.index, y = estActive['est_active'],
-                             mode='lines',
-                             name='Estimated Active (14 day case life)'))    
+    dates = fig.data[indexPosList[0]].x
+    for casePlot in range(len(indexPosList)):
+        cases = fig.data[indexPosList[casePlot]].y
+        dfCase = pd.DataFrame({'date': dates, 'cases': cases})
+        dfCase = dfCase.set_index(['date'])
+        estActive = pd.DataFrame({'date': dates, 'cases': cases})
+        estActive['date'] = estActive['date'] + pd.Timedelta(days = 14)
+        estActive = estActive.set_index(['date'])
+        estActive['est_active'] = dfCase['cases'] - estActive['cases']
+        fig.add_trace(go.Scatter(x = estActive.index, y = estActive['est_active'],
+                                 mode='lines',
+                                 name='Estimated Active (14 day case life)',
+                                line_color = 'green'))    
+
+    # Plot Visibility
+    listVis = []
+    for i in range(4):
+        plotVis = list(np.repeat([i == 0], 3)) * 2  + [i == 0] * optionalPlots # Cases, deaths, optional
+        plotVis = plotVis + list(np.repeat([i == 1], 3)) * 2  + [i == 1] * optionalPlots
+        plotVis = plotVis + list(np.repeat([i == 2], 3)) * 2  + [i == 2] * optionalPlots
+        plotVis = plotVis + list(np.repeat([i == 3], 3)) * 2  + [i == 3] * optionalPlots
+        plotVis = plotVis + [i == 0, i == 1, i == 2, i == 3] # Inflection Points
+        plotVis = plotVis + [i == 0, i == 1, i == 2, i == 3] # Active
+        plotVis = plotVis + [i == 0, i == 1, i == 2, i == 3] # Estimated Active
+        listVis = listVis + [plotVis]
+    plotVisibility =  listVis   
 
     # Fig formatting
     fig.update_layout(
         title = {
-            'text':'Cumulative Tracking Data',
-            'x':0.5,
+            'text': titleBase + plotOptions[0],
+            'x': 0.5,
             'xanchor': 'center'},
         showlegend = True,
         legend_font_size = 10,
@@ -191,49 +307,77 @@ def tracking_plot(dfCovid, fips, plotDateRange):
         height = figHeight,
         width = figWidth,
         hovermode = 'x unified',
-        # Add y scale button
-        # https://community.plotly.com/t/set-linear-or-log-axes-from-button-or-drop-down-menu-python/34927/2
-        updatemenus=[dict(
-            type = "buttons",
-            direction = 'left',
-            buttons=list([
-                dict(
-                    args=[{"yaxis.type": "linear"}],
-                    label="Linear Y",
-                    method="relayout"),
-                dict(
-                    args=[{"yaxis.type": "log"}],
-                    label="Log Y",
-                    method="relayout")
-                ]),
-    #     pad={"r": 10, "t": 10},
-        showactive = False,
-        x = 0.2,
-        xanchor = 'right',
-        y = 1.1,
-        yanchor = "bottom")],
-        # Add range slider
-        # https://github.com/plotly/plotly.py/issues/828
-        xaxis=dict(
-            range = plotDateRange,
-            rangeselector=dict(
+        # Add Daily and Per Capita buttons
+        updatemenus=[
+            dict(
+                type="buttons",
+                direction="down",
+                active=0,
+                x=1.4,
+                y=0.2,
                 buttons=list([
-                    dict(count=1,
-                         label="1m",
-                         step="month",
-                         stepmode="backward"),
-                    dict(count=2,
-                         label="2m",
-                         step="month",
-                         stepmode="backward"),
-#                     dict(step="all")
-                ])
+                    dict(label=plotOptions[0],
+                         method="update",
+                         args=[{"visible": plotVisibility[0]},
+                               {"title": titleBase + plotOptions[0]}]),
+                    dict(label=plotOptions[1],
+                         method="update",
+                         args=[{"visible": plotVisibility[1]},
+                               {"title": titleBase + plotOptions[1]}]),
+                    dict(label=plotOptions[2],
+                         method="update",
+                         args=[{"visible": plotVisibility[2]},
+                               {"title": titleBase + plotOptions[2]}]),
+                    dict(label=plotOptions[3],
+                         method="update",
+                         args=[{"visible": plotVisibility[3]},
+                               {"title": titleBase + plotOptions[3]}]),
+                ]),
             ),
-            rangeslider=dict(
-                visible=True,
-                range = plotDateRange),
-            type="date"))
+            # Add y scale button
+            # https://community.plotly.com/t/set-linear-or-log-axes-from-button-or-drop-down-menu-python/34927/2
+            dict(
+                type = "buttons",
+                direction = 'left',
+                buttons=list([
+                    dict(
+                        args=[{"yaxis.type": "linear"}],
+                        label="Linear Y",
+                        method="relayout"),
+                    dict(
+                        args=[{"yaxis.type": "log"}],
+                        label="Log Y",
+                        method="relayout")
+                    ]),
+            pad={"r": 10, "t": 10},
+            showactive = False,
+            x = 0.2,
+            xanchor = 'right',
+            y = 1.1,
+            yanchor = "bottom")],
+           # Add range slider
+           # https://github.com/plotly/plotly.py/issues/828
+            xaxis=dict(
+                range = plotDateRange,
+                rangeselector=dict(
+                    buttons=list([
+                        dict(count=1,
+                             label="1m",
+                             step="month",
+                             stepmode="backward"),
+                        dict(count=2,
+                             label="2m",
+                             step="month",
+                             stepmode="backward"),
+                    ])
+                ),
+                rangeslider=dict(
+                    visible=True,
+                    range = plotDateRange),
+                type="date"))
 
+    for trace in range(len(fig.data)):
+        fig.data[trace].update(visible = plotVisibility[0][trace])
     return fig
     
 def r_effective_plot(dfCovid, fips, plotDateRange):
@@ -768,7 +912,8 @@ def figures_to_html(figs, filename):
     '''
 
     headerText = filename.split('/')[1].split('.')[0]
-    stateName = headerText.split(' ')[2]
+    space = ' '
+    stateName = space.join(headerText.split(' ')[2:])
     dashboard = open(filename, 'w')
     dashboard.write("<html><head>" + 
                     "<title>" + headerText + "</title>" + "\n" + 
