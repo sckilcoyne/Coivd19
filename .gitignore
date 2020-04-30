@@ -1,9 +1,6 @@
 
 .ipynb_checkpoints/Covid-checkpoint.ipynb
 *.pyc
-.ipynb_checkpoints/CovidFunctionsPlotly-checkpoint.py
-.ipynb_checkpoints/CovidFunctionsPlotly-checkpoint.py
-.ipynb_checkpoints/CovidFunctionsPlotly-checkpoint.py
-.ipynb_checkpoints/CovidFunctionsPlotly-checkpoint.py
-.ipynb_checkpoints/CovidFunctionsPlotly-checkpoint.py
+
 Sandbox/.ipynb_checkpoints/Test-checkpoint.ipynb
+.ipynb_checkpoints/*

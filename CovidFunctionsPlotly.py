@@ -931,7 +931,8 @@ def figures_to_html(figs, filename):
                     "</style></head><body>" + "\n" +
                     "<div class=\"header\">"  + "\n" +
                     "<h1>" + stateName + "</h1></div>"  + "\n" +
-                    "<a href=\"https://sckilcoyne.github.io/Coivd19/\">State Index</a>")
+                    "<a href=\"https://sckilcoyne.github.io/Coivd19/\">State Index</a>" + 
+                    "  <a href=\"https://github.com/sckilcoyne/Coivd19\">GitHub Project</a>")
 
     add_js = True
     for fig in figs:
@@ -950,6 +951,10 @@ def githubIndex(dfStateData, fipsList):
     fileName = 'index.md'
     
     indexFile = open(fileName, 'w')
+    indexFile.write('[' + 'GitHub Project' + '](' + 'https://github.com/sckilcoyne/Coivd19' + ')  \n' + 
+                   'Sources: [New York Times](https://github.com/nytimes/covid-19-data) ' +
+                    '[Covid Tracking Project](https://covidtracking.com/) ' +
+                    '[US Census](https://api.census.gov/data/2019/pep/population)  ')
     for fips in fipsList:
         if int(fips) in [int(i) for i in dfStateData.index.tolist()]:
             stateName = dfStateData.at[str(fips).zfill(2), 'State']
