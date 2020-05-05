@@ -55,3 +55,35 @@ def combine_data():
             dfCombined = data
         
     return dfCombined
+
+def cdc_death_data(dfStateData):
+    
+    # https://data.cdc.gov/NCHS/Weekly-Counts-of-Deaths-by-State-and-Select-Causes/3yf8-kanr
+    weekDeath1418 = 'https://data.cdc.gov/resource/3yf8-kanr.json'
+    # https://data.cdc.gov/NCHS/Weekly-Counts-of-Deaths-by-State-and-Select-Causes/muzy-jte6
+    weekDeath1920 = 'https://data.cdc.gov/resource/muzy-jte6.json'
+    # https://data.cdc.gov/NCHS/Provisional-Death-Counts-for-Coronavirus-Disease-C/pj7m-y5uh
+#     covidDeath = 'https://data.cdc.gov/resource/pj7m-y5uh.json'
+
+    print('Starting download CDC weekely death data...')
+    cols = ['jurisdiction_of_occurrence', 'mmwryear', 'mmwrweek', 'weekendingdate', 'allcause']
+
+    dfCDCdeaths = pd.DataFrame(columns = cols)
+    for state in dfStateData['State']:
+        # From 2014 to 2018
+        weeklyDeaths = pd.read_json(weekDeath1418 + '?jurisdiction_of_occurrence=' + state.replace(' ','%20'))
+        dfCDCdeaths = dfCDCdeaths.append(weeklyDeaths[cols])
+        # From 2019 to 2020
+        weeklyDeathsNew = pd.read_json(weekDeath1920 + '?jurisdiction_of_occurrence=' + state.replace(' ','%20'))
+        dfCDCdeaths = dfCDCdeaths.append(weeklyDeathsNew[cols])
+    #     print(state)
+
+    colRename = {'jurisdiction_of_occurrence': 'state', 'mmwryear': 'year', 'mmwrweek': 'week'}
+    dfCDCdeaths.rename(columns = colRename, inplace = True)
+
+    for state, group in dfCDCdeaths.groupby('state'):
+        dfCDCdeaths.loc[dfCDCdeaths['state'] == state, 'FIPS'] = dfStateData.loc[dfStateData['State'] == state].index.values[0]
+    
+    print('Downloaded CDC weekly death data for every state from 2014-present.')
+    
+    return dfCDCdeaths
