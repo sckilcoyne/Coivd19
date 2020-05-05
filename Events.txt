@@ -28,7 +28,7 @@ All,4/12/20,Easter
 28,3/31/20,Stay-at-home for Lauderdale County only from Gov.,https://www.usatoday.com/story/news/nation/2020/03/30/coronavirus-stay-home-shelter-in-place-orders-by-state/5092413002/
 29,4/3/20,“Stay Home Missouri”,https://governor.mo.gov/priorities/stay-home-order
 30,3/26/20,Stay-at-home announced,https://www.usatoday.com/story/news/nation/2020/03/30/coronavirus-stay-home-shelter-in-place-orders-by-state/5092413002/
-30,3/28/20, Stay-at-home in effect,https://www.usatoday.com/story/news/nation/2020/03/30/coronavirus-stay-home-shelter-in-place-orders-by-state/5092413002/
+30,3/28/20,Stay-at-home in effect,https://www.usatoday.com/story/news/nation/2020/03/30/coronavirus-stay-home-shelter-in-place-orders-by-state/5092413002/
 31,4/3/20,Limit gatherings and closing dining rooms,https://www.usatoday.com/story/news/nation/2020/03/30/coronavirus-stay-home-shelter-in-place-orders-by-state/5092413002/
 32,4/1/20,Stay-at-home,https://www.usatoday.com/story/news/nation/2020/03/30/coronavirus-stay-home-shelter-in-place-orders-by-state/5092413002/
 33,3/27/20,Stay-at-home,https://www.usatoday.com/story/news/nation/2020/03/30/coronavirus-stay-home-shelter-in-place-orders-by-state/5092413002/
@@ -58,4 +58,34 @@ All,3/16/20,UK Travel ban,
 25,2/26/20,Biogen Meeting,
 All,3/11/20,Sports Shut Down,
 55,4/8/20,Primary Election,
-12,4/17/20,#FloridaMorons Re-open some beaches, https://www.newsweek.com/florida-beaches-florida-moron-twitter-1498750
+12,4/17/20,#FloridaMorons Re-open some beaches,https://www.newsweek.com/florida-beaches-florida-moron-twitter-1498750
+01,4/30/20,Stay-at-home lifted,https://www.nytimes.com/interactive/2020/us/states-reopen-map-coronavirus.html
+02,4/24/20,Stay-at-home lifted,https://www.adn.com/alaska-news/2020/04/25/what-the-reopening-looks-like-under-plans-from-anchorage-and-the-state-of-alaska/
+08,4/26/20,Stay-at-home lifted,https://www.nytimes.com/interactive/2020/us/states-reopen-map-coronavirus.html
+08,5/1/20,Personal Care biz open,https://www.nytimes.com/interactive/2020/us/states-reopen-map-coronavirus.html
+12,5/4/20,25% capactity restaurants and stores,https://www.nytimes.com/interactive/2020/us/states-reopen-map-coronavirus.html
+13,4/24/20,Shelter in place lifted,https://www.nytimes.com/interactive/2020/us/states-reopen-map-coronavirus.html
+16,5/1/20,Houses of worship open,https://www.nytimes.com/interactive/2020/us/states-reopen-map-coronavirus.html
+18,5/4/20,Stay-At-Home expires except 3 counties,https://www.nytimes.com/interactive/2020/us/states-reopen-map-coronavirus.html
+19,5/1/20,Loosened restrictions,https://www.nytimes.com/interactive/2020/us/states-reopen-map-coronavirus.html
+20,5/4/20,Phase 1 reopening,https://www.kansas.com/news/politics-government/article242408441.html#adnrb=900000
+23,5/1/20,Personal care biz reopen,https://www.nytimes.com/interactive/2020/us/states-reopen-map-coronavirus.html
+27,4/27/20,About 100k workers allowed to work,https://www.nytimes.com/interactive/2020/us/states-reopen-map-coronavirus.html
+28,4/27/20,Stay-At-Home expires,https://www.nytimes.com/interactive/2020/us/states-reopen-map-coronavirus.html
+29,5/3/20,Stay-At-Home expires,https://www.nytimes.com/interactive/2020/us/states-reopen-map-coronavirus.html
+30,4/26/20,Retail and worship reopen,https://www.nytimes.com/interactive/2020/us/states-reopen-map-coronavirus.html
+30,5/4/20,Restaurants and bars reopen,https://www.nytimes.com/interactive/2020/us/states-reopen-map-coronavirus.html
+31,5/4/20,Reopen restaurants and salons,https://www.nytimes.com/interactive/2020/us/states-reopen-map-coronavirus.html
+38,5/1/20,Reopen biz,https://www.nytimes.com/interactive/2020/us/states-reopen-map-coronavirus.html
+40,4/24/20,Grooming reopen,https://www.nytimes.com/interactive/2020/us/states-reopen-map-coronavirus.html
+40,5/1/20,Biz reopen,https://www.nytimes.com/interactive/2020/us/states-reopen-map-coronavirus.html
+45,5/4/20,Stay-At-Home expires,https://www.nytimes.com/interactive/2020/us/states-reopen-map-coronavirus.html
+45,4/20/20,Retail open 20%,https://www.nytimes.com/interactive/2020/us/states-reopen-map-coronavirus.html
+47,4/27/20,Restaurants reopen,https://www.nytimes.com/interactive/2020/us/states-reopen-map-coronavirus.html
+47,4/29/20,Retail reopen,https://www.nytimes.com/interactive/2020/us/states-reopen-map-coronavirus.html
+47,5/1/20,Gyms reopen,https://www.nytimes.com/interactive/2020/us/states-reopen-map-coronavirus.html
+48,5/1/20,Biz reopen,https://www.nytimes.com/interactive/2020/us/states-reopen-map-coronavirus.html
+49,5/1/20,Risk level downgraded to orange and biz reopen,https://www.nytimes.com/interactive/2020/us/states-reopen-map-coronavirus.html
+54,5/4/20,Stay-At-Home lifted,https://www.nytimes.com/interactive/2020/us/states-reopen-map-coronavirus.html
+56,5/1/20,Restrictions lifted,https://www.nytimes.com/interactive/2020/us/states-reopen-map-coronavirus.html
+
