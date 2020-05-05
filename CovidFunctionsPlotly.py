@@ -57,7 +57,7 @@ def correlations(shiftSearch, dfCovid, fipsList):
     print('Completed ' + str(shiftSearch) + ' days of case-death correlations and auto-correlations.')
     return dfShiftCor
 
-def state_plot(dfCovid, dfShiftCor, dfStateData, dfEvents, fips, plotDateRange):
+def state_plot(dfCovid, dfShiftCor, dfStateData, dfEvents, dfCDCdeaths, fips, plotDateRange):
     # Notable Events
     dfEventsAll = dfEvents.groupby('FIPS').get_group('All')
     if str(fips).zfill(2) in dfEvents.groupby('FIPS').groups.keys():
@@ -66,7 +66,7 @@ def state_plot(dfCovid, dfShiftCor, dfStateData, dfEvents, fips, plotDateRange):
         dfEventsState = dfEventsAll    
     
     # Tracking Plots
-    figTrackingRaw = tracking_plot(dfCovid, fips, plotDateRange, dfStateData)
+    figTracking = tracking_plot(dfCovid, fips, plotDateRange, dfStateData)
     
     # R effective estimate plot
     figReffective = r_effective_plot(dfCovid, fips, plotDateRange)
@@ -84,23 +84,26 @@ def state_plot(dfCovid, dfShiftCor, dfStateData, dfEvents, fips, plotDateRange):
     figTestPercent = percent_poisitve_plot(dfCovid, fips, plotDateRange)
     
     # Resource Usage Plots
-    figResourceRaw = resource_usage_plot(dfCovid, fips, plotDateRange)
+    figResource = resource_usage_plot(dfCovid, fips, plotDateRange)
+    
+    # CDC Death Data
+    figCDCdeaths = cdc_deaths_plot(dfCDCdeaths, dfStateData, fips)
     
     # Add per capita axis
     perCapFig = [figDailyTesting, figTestingGrow]
-#     perCapFig = [figTrackingRaw, figTrackingLog, figDailyTesting, 
-#                 figTestingGrow, figResourceRaw, figResourceLog]
+#     perCapFig = [figTracking, figTrackingLog, figDailyTesting, 
+#                 figTestingGrow, figResource, figResourceLog]
     for fig in perCapFig:
         fig = per_capita_axis(fig, dfStateData, fips)
         
     # Add event markers
-    for fig in [figTrackingRaw, figReffective]:
+    for fig in [figTracking, figReffective]:
         fig = event_markers(fig, dfEventsState)
         
     # Overall figure formatting     
-    figList = [figTrackingRaw, figReffective, 
+    figList = [figTracking, figReffective, 
                figDailyTesting, figTestPercent, figTestingGrow,
-               figResourceRaw, figCorrelation]
+               figCDCdeaths, figResource, figCorrelation]
     htmlFile = 'figs/Tracking Data ' + dfStateData.at[str(fips).zfill(2), 'State'] + '.html'
     figures_to_html(figList, htmlFile)
 
@@ -761,6 +764,86 @@ def resource_usage_plot(dfCovid, fips, plotDateRange):
     
 
 #     fig.show()
+    return fig
+
+def cdc_deaths_plot(dfCDCdeaths, dfStateData, fips):
+    previousYears = list(range(2014,2020))
+    thisYear = 2020
+    
+    stateCount = len(dfStateData['State']) + 1
+    weekCount = dfCDCdeaths.week.max()
+    weekRange = range(1, weekCount + 1)
+
+    cols = ['New_Deaths', 'Median', 'Upper_Quartile', 'Lower_Quartile', 'Max', 'Min']
+    dfCDCState = pd.DataFrame(columns = cols, index = list(weekRange))
+
+    
+    fipsFilter = dfCDCdeaths.FIPS == str(fips).zfill(2)
+    prevYearFilter = dfCDCdeaths.year.isin(previousYears)
+    thisYearFilter = dfCDCdeaths.year == thisYear
+    for w in weekRange:
+        weekFilter = dfCDCdeaths.week == w
+        oldDeaths = dfCDCdeaths[fipsFilter & weekFilter & prevYearFilter ]['allcause']
+        newDeaths = dfCDCdeaths[fipsFilter & weekFilter & thisYearFilter ]['allcause']
+
+        dfCDCState.at[w, 'New_Deaths'] = newDeaths.mean() # gets out of list
+        dfCDCState.at[w, 'Median'] = oldDeaths.median()
+        dfCDCState.at[w, 'Upper_Quartile'] = oldDeaths.quantile(0.75)
+        dfCDCState.at[w, 'Lower_Quartile'] = oldDeaths.quantile(0.25)
+        dfCDCState.at[w, 'Max'] = oldDeaths.max()
+        dfCDCState.at[w, 'Min'] = oldDeaths.min()
+
+    maxDiff = dfCDCState['New_Deaths'] - dfCDCState['Max']
+    maxExcess = np.nansum((maxDiff > 0) * maxDiff)
+
+    upperDiff = dfCDCState['New_Deaths'] - dfCDCState['Upper_Quartile']
+    upperExcess = np.nansum((upperDiff > 0) * upperDiff)
+
+    medianDiff = dfCDCState['New_Deaths'] - dfCDCState['Median']
+    medianExcess = np.nansum((medianDiff > 0) * medianDiff)
+    
+    fig = go.Figure()
+    fig.add_trace(go.Scatter(x = dfCDCState.index, y = dfCDCState['New_Deaths'], 
+                         name = '2020 Deaths',
+                         line_color = 'firebrick'))
+    fig.add_trace(go.Scatter(x = dfCDCState.index, y = dfCDCState['Median'], 
+                             name = 'Median',
+                             line_color = 'royalblue'))
+    fig.add_trace(go.Scatter(x = dfCDCState.index, y = dfCDCState['Upper_Quartile'], 
+                             name = 'Upper Quartile',
+                             line_color = 'orange', line_dash = 'dash'))
+    fig.add_trace(go.Scatter(x = dfCDCState.index, y = dfCDCState['Lower_Quartile'], 
+                             name = 'Lower Quartile',
+                             line_color = 'orange', line_dash = 'dot',
+                             visible = 'legendonly'))
+    fig.add_trace(go.Scatter(x = dfCDCState.index, y = dfCDCState['Max'], 
+                             name = 'Max',
+                             line_color = 'green', line_dash = 'dash'))
+    fig.add_trace(go.Scatter(x = dfCDCState.index, y = dfCDCState['Min'], 
+                             name = 'Min',
+                             line_color = 'green', line_dash = 'dot',
+                             visible = 'legendonly'))
+    
+    yMin = dfCDCState.iloc[1:]['Min'].min() * 0.9
+    yMax = max(dfCDCState.iloc[1:]['Max'].max(), dfCDCState.iloc[1:]['New_Deaths'].max()) * 1.1
+
+    annotationText = ('Note: CDC data may be up to 8 weeks delayed.' + '<br>' + '<br>' +
+        'Where 2020 is greater than X' + '<br>' +
+        '2020 - Max = ' + str(maxExcess) + '<br>' +
+        '2020 - Upper Quartile = ' + str(upperExcess) +  '<br>' + 
+        '2020 - Median = ' + str(medianExcess))
+    
+    fig.update_layout(title_text = 'All Cause Reported Deaths 2014-2019 vs. 2020',
+                      height = figHeight,
+                      width = figWidth,
+                      yaxis_range = [yMin, yMax],
+                      xaxis_title = 'Week in Year',
+                      annotations = [dict(x = 1.2, y = 1.2,
+                                          showarrow = False,
+                                          text = annotationText,
+                                          font_size = 10,
+                                          align = 'left',
+                                          xref = 'paper', yref = 'paper')])
     return fig
     
 def per_capita_axis(fig, dfStateData, fips):
