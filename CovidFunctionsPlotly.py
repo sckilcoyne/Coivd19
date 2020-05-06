@@ -91,8 +91,6 @@ def state_plot(dfCovid, dfShiftCor, dfStateData, dfEvents, dfCDCdeaths, fips, pl
     
     # Add per capita axis
     perCapFig = [figDailyTesting, figTestingGrow]
-#     perCapFig = [figTracking, figTrackingLog, figDailyTesting, 
-#                 figTestingGrow, figResource, figResourceLog]
     for fig in perCapFig:
         fig = per_capita_axis(fig, dfStateData, fips)
         
