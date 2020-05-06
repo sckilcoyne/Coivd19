@@ -1,5 +1,6 @@
 [GitHub Project](https://github.com/sckilcoyne/Coivd19)  
 Sources: [New York Times](https://github.com/nytimes/covid-19-data) [Covid Tracking Project](https://covidtracking.com/) [US Census](https://api.census.gov/data/2019/pep/population)  
+[USA](https://sckilcoyne.github.io/Coivd19/figs/Tracking Data USA.html)  
 [Alabama](https://sckilcoyne.github.io/Coivd19/figs/Tracking Data Alabama.html)  
 [Alaska](https://sckilcoyne.github.io/Coivd19/figs/Tracking Data Alaska.html)  
 [Arizona](https://sckilcoyne.github.io/Coivd19/figs/Tracking Data Arizona.html)  
