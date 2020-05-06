@@ -885,7 +885,7 @@ def cdc_deaths_plot(dfCDCdeaths, dfCovid, dfStateData, fips):
                       hovermode = 'x unified',
 #                       yaxis_range = [yMinRaw, yMaxRaw],
                       xaxis_title = 'Week in Year',
-                      annotations = [dict(x = 1.2, y = 1.2,
+                      annotations = [dict(x = 1.3, y = 1.2,
                                           showarrow = False,
                                           text = annotationText,
                                           font_size = 10,
