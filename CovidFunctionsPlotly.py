@@ -87,7 +87,7 @@ def state_plot(dfCovid, dfShiftCor, dfStateData, dfEvents, dfCDCdeaths, fips, pl
     figResource = resource_usage_plot(dfCovid, fips, plotDateRange)
     
     # CDC Death Data
-    figCDCdeaths = cdc_deaths_plot(dfCDCdeaths, dfStateData, fips)
+    figCDCdeaths = cdc_deaths_plot(dfCDCdeaths, dfCovid, dfStateData, fips)
     
     # Add per capita axis
     perCapFig = [figDailyTesting, figTestingGrow]
@@ -766,7 +766,7 @@ def resource_usage_plot(dfCovid, fips, plotDateRange):
 #     fig.show()
     return fig
 
-def cdc_deaths_plot(dfCDCdeaths, dfStateData, fips):
+def cdc_deaths_plot(dfCDCdeaths, dfCovid, dfStateData, fips):
     previousYears = list(range(2014,2020))
     thisYear = 2020
     
@@ -776,7 +776,6 @@ def cdc_deaths_plot(dfCDCdeaths, dfStateData, fips):
 
     cols = ['New_Deaths', 'Median', 'Upper_Quartile', 'Lower_Quartile', 'Max', 'Min']
     dfCDCState = pd.DataFrame(columns = cols, index = list(weekRange))
-
     
     fipsFilter = dfCDCdeaths.FIPS == str(fips).zfill(2)
     prevYearFilter = dfCDCdeaths.year.isin(previousYears)
@@ -802,10 +801,18 @@ def cdc_deaths_plot(dfCDCdeaths, dfStateData, fips):
     medianDiff = dfCDCState['New_Deaths'] - dfCDCState['Median']
     medianExcess = np.nansum((medianDiff > 0) * medianDiff)
     
+    # Get state covid death data
+    # Daily death data multiplied by 7 to get rolling weekly death data
+    covidDeaths = dfCovid.loc[(fips), 'deaths'].diff().rolling(window = 7, min_periods = 5).mean() * 7
+    covidWeek = dfCovid.loc[(fips), 'week']
+        
+    
     fig = go.Figure()
+    
+    # Raw CDC Data
     fig.add_trace(go.Scatter(x = dfCDCState.index, y = dfCDCState['New_Deaths'], 
-                         name = '2020 Deaths',
-                         line_color = 'firebrick'))
+                             name = '2020 Deaths',
+                             line_color = 'firebrick'))
     fig.add_trace(go.Scatter(x = dfCDCState.index, y = dfCDCState['Median'], 
                              name = 'Median',
                              line_color = 'royalblue'))
@@ -824,9 +831,48 @@ def cdc_deaths_plot(dfCDCdeaths, dfStateData, fips):
                              line_color = 'green', line_dash = 'dot',
                              visible = 'legendonly'))
     
-    yMin = dfCDCState.iloc[1:]['Min'].min() * 0.9
-    yMax = max(dfCDCState.iloc[1:]['Max'].max(), dfCDCState.iloc[1:]['New_Deaths'].max()) * 1.1
+#     yMinRaw = dfCDCState.iloc[1:]['Min'].min() * 0.9
+#     yMaxRaw = max(dfCDCState.iloc[1:]['Max'].max(), dfCDCState.iloc[1:]['New_Deaths'].max()) * 1.1
+    visibleRaw = [True, True, True, 'legendonly', True, 'legendonly']
+    hiddenRaw = [False] * len(visibleRaw)
 
+    # Normalized Data
+    norm2020 = dfCDCState['New_Deaths'] - dfCDCState['Median']
+    normMax = dfCDCState['Max'] - dfCDCState['Median']
+    normMin = dfCDCState['Min'] - dfCDCState['Median']
+    normUpper = dfCDCState['Upper_Quartile'] - dfCDCState['Median']
+    normLower = dfCDCState['Lower_Quartile'] - dfCDCState['Median']
+    
+    fig.add_trace(go.Scatter(x = dfCDCState.index, y = norm2020, 
+                             name = '2020 Deaths',
+                             line_color = 'firebrick',
+                             visible = False))
+    fig.add_trace(go.Scatter(x = covidWeek, y = covidDeaths, 
+                             name = 'Covid Deaths',
+                             line_color = 'purple',
+                             visible = False))
+    fig.add_trace(go.Scatter(x = dfCDCState.index, y = normUpper, 
+                             name = 'Upper Quartile',
+                             line_color = 'orange', line_dash = 'dash',
+                             visible = False))
+    fig.add_trace(go.Scatter(x = dfCDCState.index, y = normLower, 
+                             name = 'Lower Quartile',
+                             line_color = 'orange', line_dash = 'dot',
+                             visible = False))
+    fig.add_trace(go.Scatter(x = dfCDCState.index, y = normMax, 
+                             name = 'Max',
+                             line_color = 'green', line_dash = 'dash',
+                             visible = False))
+    fig.add_trace(go.Scatter(x = dfCDCState.index, y = normMin, 
+                             name = 'Min',
+                             line_color = 'green', line_dash = 'dot',
+                             visible = False))
+#     yMinNorm = min(norm2020.min(), 0) * 1.1
+#     yMaxNorm = max(norm2020.max(), normMax.max()) * 1.1
+    visibleNorm = [True, True, True, 'legendonly', True, 'legendonly']
+    hiddenNorm = [False] * len(visibleNorm)
+    
+    plotVisibility = [visibleRaw + hiddenNorm, hiddenRaw + visibleNorm]
     annotationText = ('Note: CDC data may be up to 8 weeks delayed.' + '<br>' + '<br>' +
         'Where 2020 is greater than X' + '<br>' +
         '2020 - Max = ' + str(maxExcess) + '<br>' +
@@ -836,14 +882,35 @@ def cdc_deaths_plot(dfCDCdeaths, dfStateData, fips):
     fig.update_layout(title_text = 'All Cause Reported Deaths 2014-2019 vs. 2020',
                       height = figHeight,
                       width = figWidth,
-                      yaxis_range = [yMin, yMax],
+                      hovermode = 'x unified',
+#                       yaxis_range = [yMinRaw, yMaxRaw],
                       xaxis_title = 'Week in Year',
                       annotations = [dict(x = 1.2, y = 1.2,
                                           showarrow = False,
                                           text = annotationText,
                                           font_size = 10,
                                           align = 'left',
-                                          xref = 'paper', yref = 'paper')])
+                                          xref = 'paper', yref = 'paper')],
+                      updatemenus = [dict(
+                          type = 'buttons',
+                          direction = 'down',
+                          x = 1.3,
+                          y = 0.2,
+                          buttons = list([
+                              dict(label = 'Raw CDC Data',
+                                   method = 'update',
+                                   args = [{'visible': plotVisibility[0]},
+                                           {'title': 'All Cause Reported Deaths 2014-2019 vs. 2020'}#,
+#                                            {'yaxes': {'range': [yMinRaw, yMaxRaw]}}
+                                          ]),
+                              dict(label = 'Normalized CDC Data',
+                                   method = 'update',
+                                   args = [{'visible': plotVisibility[1]},
+                                           {'title': 'All Cause Reported Deaths about 2014-2019 Median'}#,
+#                                            {'yaxes': {'range': [yMinNorm, yMaxNorm]}}
+                                          ]),
+                     ]),)
+                     ])
     return fig
     
 def per_capita_axis(fig, dfStateData, fips):
