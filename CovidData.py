@@ -75,8 +75,9 @@ def cdc_death_data(dfStateData):
         dfCDCdeaths = dfCDCdeaths.append(weeklyDeaths[cols])
         # From 2019 to 2020
         weeklyDeathsNew = pd.read_json(weekDeath1920 + '?jurisdiction_of_occurrence=' + state.replace(' ','%20'))
+        colRename = {'all_cause': 'allcause', 'week_ending_date': 'weekendingdate'} # CDC Changed column names on me
+        weeklyDeathsNew.rename(columns = colRename, inplace = True)
         dfCDCdeaths = dfCDCdeaths.append(weeklyDeathsNew[cols])
-    #     print(state)
 
     colRename = {'jurisdiction_of_occurrence': 'state', 'mmwryear': 'year', 'mmwrweek': 'week'}
     dfCDCdeaths.rename(columns = colRename, inplace = True)
