@@ -57,7 +57,7 @@ def correlations(shiftSearch, dfCovid, fipsList):
     print('Completed ' + str(shiftSearch) + ' days of case-death correlations and auto-correlations.')
     return dfShiftCor
 
-def state_plot(dfCovid, dfShiftCor, dfStateData, dfEvents, fips, plotDateRange):
+def state_plot(dfCovid, dfShiftCor, dfStateData, dfEvents, dfCDCdeaths, fips, plotDateRange):
     # Notable Events
     dfEventsAll = dfEvents.groupby('FIPS').get_group('All')
     if str(fips).zfill(2) in dfEvents.groupby('FIPS').groups.keys():
@@ -66,7 +66,7 @@ def state_plot(dfCovid, dfShiftCor, dfStateData, dfEvents, fips, plotDateRange):
         dfEventsState = dfEventsAll    
     
     # Tracking Plots
-    figTrackingRaw = tracking_plot(dfCovid, fips, plotDateRange)
+    figTracking = tracking_plot(dfCovid, fips, plotDateRange, dfStateData)
     
     # R effective estimate plot
     figReffective = r_effective_plot(dfCovid, fips, plotDateRange)
@@ -84,106 +84,225 @@ def state_plot(dfCovid, dfShiftCor, dfStateData, dfEvents, fips, plotDateRange):
     figTestPercent = percent_poisitve_plot(dfCovid, fips, plotDateRange)
     
     # Resource Usage Plots
-    figResourceRaw = resource_usage_plot(dfCovid, fips, plotDateRange)
+    figResource = resource_usage_plot(dfCovid, fips, plotDateRange)
+    
+    # CDC Death Data
+    figCDCdeaths = cdc_deaths_plot(dfCDCdeaths, dfCovid, dfStateData, fips)
     
     # Add per capita axis
     perCapFig = [figDailyTesting, figTestingGrow]
-#     perCapFig = [figTrackingRaw, figTrackingLog, figDailyTesting, 
-#                 figTestingGrow, figResourceRaw, figResourceLog]
+#     perCapFig = [figTracking, figTrackingLog, figDailyTesting, 
+#                 figTestingGrow, figResource, figResourceLog]
     for fig in perCapFig:
         fig = per_capita_axis(fig, dfStateData, fips)
         
     # Add event markers
-    for fig in [figTrackingRaw, figReffective]:
+    for fig in [figTracking, figReffective]:
         fig = event_markers(fig, dfEventsState)
         
     # Overall figure formatting     
-    figList = [figTrackingRaw, figReffective, 
+    figList = [figTracking, figReffective, 
                figDailyTesting, figTestPercent, figTestingGrow,
-               figResourceRaw, figCorrelation]
+               figCDCdeaths, figResource, figCorrelation]
     htmlFile = 'figs/Tracking Data ' + dfStateData.at[str(fips).zfill(2), 'State'] + '.html'
     figures_to_html(figList, htmlFile)
 
     
-    
-# def tracking_plot(fig, dfCovid, fips):
-def tracking_plot(dfCovid, fips, plotDateRange):
+def tracking_plot(dfCovid, fips, plotDateRange, dfStateData):
     fig = go.Figure()
-    fig.add_trace(go.Scatter(x = dfCovid.loc[fips]['positive_cases'].index, y = dfCovid.loc[fips]['positive_cases'],
-                             mode='lines',
-                             name='Reported Cases (NYT, CTP)'))
-    fig.add_trace(go.Scatter(x = dfCovid.loc[fips]['cases(NYT)'].index, y = dfCovid.loc[fips]['cases(NYT)'],
-                             mode='markers',
-                             name='Reported Cases  (NYT)',
-                             visible='legendonly'))
-    fig.add_trace(go.Scatter(x = dfCovid.loc[fips]['positive(CTP)'].index, y = dfCovid.loc[fips]['positive(CTP)'],
-                             mode='markers',
-                             name='Reported Cases  (CTP)',
-                             visible='legendonly'))
-     
-    cases = dfCovid.loc[fips]['positive_cases'].copy()
-    inflections = inflection_points(cases)
-    fig.add_trace(go.Scatter(x = cases.index[inflections], y = cases[inflections],
-                             mode='markers',
-#                              marker_color = 'red',
-                             marker_line_color = 'red',
-                             marker_symbol = 'x-thin',
-                             marker_line_width=2,
-                             name='Case Inflection Points'))
-    
-    fig.add_trace(go.Scatter(x = dfCovid.loc[fips]['deaths'].index, y = dfCovid.loc[fips]['deaths'],
-                             mode='lines',
-                             name='Deaths (NYT, CTP)'))
-    fig.add_trace(go.Scatter(x = dfCovid.loc[fips]['deaths(NYT)'].index, y = dfCovid.loc[fips]['deaths(NYT)'],
-                             mode='markers',
-                             name='Deaths (NYT)',
-                             visible='legendonly'))
-    fig.add_trace(go.Scatter(x = dfCovid.loc[fips]['death(CTP)'].index, y = dfCovid.loc[fips]['death(CTP)'],
-                             mode='markers',
-                             name='Deaths (CTP)',
-                             visible='legendonly'))
-    
-    if dfCovid.loc[fips]['hospitalizedCumulative(CTP)'].sum() > 0:
+    dates = dfCovid.loc[fips].index
+    pop = int(dfStateData.at[str(fips).zfill(2), 'Population'])
+    capita = 10000
+
+    titleBase = 'Tracking Data - '
+    plotOptions = ['Cumulative', 'Cumulative per 10,000', 'Daily', 'Daily per 10,000']
+    scalingFactor = [1, capita / pop, 1, capita / pop]
+    diff = [False, False, True, True]
+    sourceList = ['(NYT, CTP)', '(NYT)', '(CTP)']
+    sourceMarker = ['circle', 'y-up', 'y-down']
+
+    for i, plot in enumerate(plotOptions):
+        optionalPlots = 0
+        # Cases
+        for s, source in enumerate(['positive_cases', 'cases(NYT)', 'positive(CTP)']):
+            cases = dfCovid.loc[fips][source] * scalingFactor[i]
+            if diff[i]:
+                cases = cases.diff().rolling(7, min_periods = 1, center = True, win_type = 'triang').mean()
+            if s < 1:
+                mode = 'lines'
+            else:
+                mode = 'markers'
+            fig.add_trace(go.Scatter(x = dates, y = cases,
+                                     mode = mode,
+                                     line_color = 'blue',
+                                     marker_line_color = 'blue',
+                                     marker_symbol = sourceMarker[s],
+                                     marker_line_width = 1,
+                                     name='Reported Cases ' + sourceList[s],
+                                     visible = False))    
+         # Deaths
+        for s, source in enumerate(['deaths', 'deaths(NYT)', 'death(CTP)']):
+            cases = dfCovid.loc[fips][source] * scalingFactor[i]
+            if diff[i]:
+                cases = cases.diff().rolling(7, min_periods = 1, center = True, win_type = 'triang').mean()
+            if s < 1:
+                mode = 'lines'
+            else:
+                mode = 'markers'
+            fig.add_trace(go.Scatter(x = dates, y = cases,
+                                     mode=mode,
+                                     line_color = 'orange',
+                                     marker_line_color = 'orange',
+                                     marker_symbol = sourceMarker[s],
+                                     marker_line_width = 1,
+                                     name='Deaths ' + sourceList[s],
+                                     visible = False)) 
+
         hospitalized = dfCovid.loc[fips]['hospitalizedCumulative(CTP)']
-        fig.add_trace(go.Scatter(x = hospitalized.index, y = hospitalized,
-                                 mode='lines',
-                                 name='Hospitalized Cum. (CTP)'))        
-    if dfCovid.loc[fips]['inIcuCumulative(CTP)'].sum() > 0:
-        fig.add_trace(go.Scatter(x = dfCovid.loc[fips]['inIcuCumulative(CTP)'].index, y = dfCovid.loc[fips]['inIcuCumulative(CTP)'],
-                                 mode='lines',
-                                 name='ICU Cum. (CTP)')) 
-    if dfCovid.loc[fips]['onVentilatorCumulative(CTP)'].sum() > 0:
+        inICU = dfCovid.loc[fips]['inIcuCumulative(CTP)']
         onVent = dfCovid.loc[fips]['onVentilatorCumulative(CTP)']
-        fig.add_trace(go.Scatter(x = onVent.index, y = onVent,
+        recover = dfCovid.loc[fips]['recovered(CTP)']
+
+        if hospitalized.sum() > 0:
+            hospitalized = hospitalized * scalingFactor[i]
+            if diff[i]:
+                hospitalized = hospitalized.diff().rolling(7, min_periods = 1, center = True, win_type = 'triang').mean()
+            fig.add_trace(go.Scatter(x = dates, y = hospitalized,
+                                     mode='lines',
+                                     name='Hospitalized (CTP)',
+                                     visible = False)) 
+            optionalPlots = optionalPlots + 1
+        if inICU.sum() > 0:
+            inICU = inICU * scalingFactor[i]
+            if diff[i]:
+                inICU = inICU.diff().rolling(7, min_periods = 1, center = True, win_type = 'triang').mean()
+            fig.add_trace(go.Scatter(x = dates, y = inICU,
+                                     mode='lines',
+                                     name='ICU (CTP)',
+                                     visible = False)) 
+            optionalPlots = optionalPlots + 1
+        if onVent.sum() > 0:
+            onVent = onVent * scalingFactor[i]
+            if diff[i]:
+                onVent = onVent.diff().rolling(7, min_periods = 1, center = True, win_type = 'triang').mean()
+            fig.add_trace(go.Scatter(x = dates, y = onVent,
+                                     mode='lines',
+                                     name='Ventilator (CTP)',
+                                     visible = False))
+            optionalPlots = optionalPlots + 1
+        if recover.sum() > 0:
+            recover = recover * scalingFactor[i]
+            if diff[i]:
+                recover = recover.diff().rolling(7, min_periods = 1, center = True, win_type = 'triang').mean()
+            fig.add_trace(go.Scatter(x = dates, y = recover,
+                                     mode='lines',
+                                     name='Recovered (CTP)',
+                                     visible = False))
+            optionalPlots = optionalPlots + 1
+
+
+
+    # Case Inflection Points 
+    cases = dfCovid.loc[fips]['positive_cases'].copy()    
+    inflections = inflection_points(cases)
+
+    plotNames = [fig.data[i].name for i in range(len(fig.data))]
+    indexPosList = []
+    indexPos = 0
+    while True:
+        try:
+            # Search for item in list from indexPos to the end of list
+            indexPos = plotNames.index('Reported Cases (NYT, CTP)', indexPos)
+            # Add the index position in list
+            indexPosList.append(indexPos)
+            indexPos += 1
+        except ValueError as e:
+            break
+
+    xData = cases.index[inflections]
+    for casePlots in indexPosList:
+        yData = fig.data[casePlots].y[inflections]    
+        fig.add_trace(go.Scatter(x = xData, y = yData,
+                                 mode='markers',
+                                 marker_line_color = 'red',
+                                 marker_symbol = 'x-thin',
+                                 marker_line_width=2,
+                                 name='Case Inflection Points'))
+
+
+
+    # Reported de-active  
+    recoverPosList = []
+    recoverPos = 0
+    while True:
+        try:
+            # Search for item in list from indexPos to the end of list
+            recoverPos = plotNames.index('Recovered (CTP)', recoverPos)
+            # Add the index position in list
+            recoverPosList.append(recoverPos)
+            recoverPos += 1
+        except ValueError as e:
+            break
+
+    deathPosList = []
+    deathPos = 0
+    while True:
+        try:
+            # Search for item in list from indexPos to the end of list
+            deathPos = plotNames.index('Deaths (NYT, CTP)', deathPos)
+            # Add the index position in list
+            deathPosList.append(deathPos)
+            deathPos += 1
+        except ValueError as e:
+            break
+
+    for i in range(len(deathPosList)):
+        deaths = fig.data[deathPosList[i]].y
+
+        if len(recoverPosList) > 0:
+            recovered = fig.data[recoverPosList[i]].y
+            recovered[np.isnan(recovered)] = 0    
+            knownNonActive = np.add(deaths, recovered)
+        else:
+            knownNonActive = deaths
+        posLessDeadRecov = fig.data[indexPosList[i]].y - knownNonActive
+        fig.add_trace(go.Scatter(x = fig.data[deathPosList[i]].x, y = posLessDeadRecov,
                                  mode='lines',
-                                 name='Ventilator Cum. (CTP)')) 
-    if dfCovid.loc[fips]['recovered(CTP)'].sum() > 0:
-        fig.add_trace(go.Scatter(x = dfCovid.loc[fips]['recovered(CTP)'].index, y = dfCovid.loc[fips]['recovered(CTP)'],
-                                 mode='lines',
-                                 name='Recovered (CTP)')) 
-    # Reported de-active        
-    recovered = dfCovid.loc[fips]['recovered(CTP)'].copy()
-    recovered[np.isnan(recovered)] = 0
-    knownNonActive = np.add(dfCovid.loc[fips]['deaths'], recovered)
-    upperLimitActive = dfCovid.loc[fips]['positive_cases'] - knownNonActive
-    fig.add_trace(go.Scatter(x = upperLimitActive.index, y = upperLimitActive,
-                             mode='lines',
-                             name='Positive less Recovered and Dead'))
+                                 name='Positive less Recovered and Dead'))
 
     # Estimated Active
-    estActive = pd.DataFrame(dfCovid.loc[fips]['positive_cases']).reset_index()
-    estActive['date'] = estActive['date'] + pd.Timedelta(days = 14)
-    estActive = estActive.set_index(['date'])
-    estActive['est_active'] = dfCovid.loc[fips]['positive_cases'] - estActive['positive_cases']
-    fig.add_trace(go.Scatter(x = estActive.index, y = estActive['est_active'],
-                             mode='lines',
-                             name='Estimated Active (14 day case life)'))    
+    dates = fig.data[indexPosList[0]].x
+    for casePlot in range(len(indexPosList)):
+        cases = fig.data[indexPosList[casePlot]].y
+        dfCase = pd.DataFrame({'date': dates, 'cases': cases})
+        dfCase = dfCase.set_index(['date'])
+        estActive = pd.DataFrame({'date': dates, 'cases': cases})
+        estActive['date'] = estActive['date'] + pd.Timedelta(days = 14)
+        estActive = estActive.set_index(['date'])
+        estActive['est_active'] = dfCase['cases'] - estActive['cases']
+        fig.add_trace(go.Scatter(x = estActive.index, y = estActive['est_active'],
+                                 mode='lines',
+                                 name='Estimated Active (14 day case life)',
+                                line_color = 'green'))    
+
+    # Plot Visibility
+    listVis = []
+    for i in range(4):
+        plotVis = list(np.repeat([i == 0], 3)) * 2  + [i == 0] * optionalPlots # Cases, deaths, optional
+        plotVis = plotVis + list(np.repeat([i == 1], 3)) * 2  + [i == 1] * optionalPlots
+        plotVis = plotVis + list(np.repeat([i == 2], 3)) * 2  + [i == 2] * optionalPlots
+        plotVis = plotVis + list(np.repeat([i == 3], 3)) * 2  + [i == 3] * optionalPlots
+        plotVis = plotVis + [i == 0, i == 1, i == 2, i == 3] # Inflection Points
+        plotVis = plotVis + [i == 0, i == 1, i == 2, i == 3] # Active
+        plotVis = plotVis + [i == 0, i == 1, i == 2, i == 3] # Estimated Active
+        listVis = listVis + [plotVis]
+    plotVisibility =  listVis   
 
     # Fig formatting
     fig.update_layout(
         title = {
-            'text':'Cumulative Tracking Data',
-            'x':0.5,
+            'text': titleBase + plotOptions[0],
+            'x': 0.5,
             'xanchor': 'center'},
         showlegend = True,
         legend_font_size = 10,
@@ -191,49 +310,77 @@ def tracking_plot(dfCovid, fips, plotDateRange):
         height = figHeight,
         width = figWidth,
         hovermode = 'x unified',
-        # Add y scale button
-        # https://community.plotly.com/t/set-linear-or-log-axes-from-button-or-drop-down-menu-python/34927/2
-        updatemenus=[dict(
-            type = "buttons",
-            direction = 'left',
-            buttons=list([
-                dict(
-                    args=[{"yaxis.type": "linear"}],
-                    label="Linear Y",
-                    method="relayout"),
-                dict(
-                    args=[{"yaxis.type": "log"}],
-                    label="Log Y",
-                    method="relayout")
-                ]),
-    #     pad={"r": 10, "t": 10},
-        showactive = False,
-        x = 0.2,
-        xanchor = 'right',
-        y = 1.1,
-        yanchor = "bottom")],
-        # Add range slider
-        # https://github.com/plotly/plotly.py/issues/828
-        xaxis=dict(
-            range = plotDateRange,
-            rangeselector=dict(
+        # Add Daily and Per Capita buttons
+        updatemenus=[
+            dict(
+                type="buttons",
+                direction="down",
+                active=0,
+                x=1.4,
+                y=0.2,
                 buttons=list([
-                    dict(count=1,
-                         label="1m",
-                         step="month",
-                         stepmode="backward"),
-                    dict(count=2,
-                         label="2m",
-                         step="month",
-                         stepmode="backward"),
-#                     dict(step="all")
-                ])
+                    dict(label=plotOptions[0],
+                         method="update",
+                         args=[{"visible": plotVisibility[0]},
+                               {"title": titleBase + plotOptions[0]}]),
+                    dict(label=plotOptions[1],
+                         method="update",
+                         args=[{"visible": plotVisibility[1]},
+                               {"title": titleBase + plotOptions[1]}]),
+                    dict(label=plotOptions[2],
+                         method="update",
+                         args=[{"visible": plotVisibility[2]},
+                               {"title": titleBase + plotOptions[2]}]),
+                    dict(label=plotOptions[3],
+                         method="update",
+                         args=[{"visible": plotVisibility[3]},
+                               {"title": titleBase + plotOptions[3]}]),
+                ]),
             ),
-            rangeslider=dict(
-                visible=True,
-                range = plotDateRange),
-            type="date"))
+            # Add y scale button
+            # https://community.plotly.com/t/set-linear-or-log-axes-from-button-or-drop-down-menu-python/34927/2
+            dict(
+                type = "buttons",
+                direction = 'left',
+                buttons=list([
+                    dict(
+                        args=[{"yaxis.type": "linear"}],
+                        label="Linear Y",
+                        method="relayout"),
+                    dict(
+                        args=[{"yaxis.type": "log"}],
+                        label="Log Y",
+                        method="relayout")
+                    ]),
+            pad={"r": 10, "t": 10},
+            showactive = False,
+            x = 0.2,
+            xanchor = 'right',
+            y = 1.1,
+            yanchor = "bottom")],
+           # Add range slider
+           # https://github.com/plotly/plotly.py/issues/828
+            xaxis=dict(
+                range = plotDateRange,
+                rangeselector=dict(
+                    buttons=list([
+                        dict(count=1,
+                             label="1m",
+                             step="month",
+                             stepmode="backward"),
+                        dict(count=2,
+                             label="2m",
+                             step="month",
+                             stepmode="backward"),
+                    ])
+                ),
+                rangeslider=dict(
+                    visible=True,
+                    range = plotDateRange),
+                type="date"))
 
+    for trace in range(len(fig.data)):
+        fig.data[trace].update(visible = plotVisibility[0][trace])
     return fig
     
 def r_effective_plot(dfCovid, fips, plotDateRange):
@@ -618,6 +765,153 @@ def resource_usage_plot(dfCovid, fips, plotDateRange):
 
 #     fig.show()
     return fig
+
+def cdc_deaths_plot(dfCDCdeaths, dfCovid, dfStateData, fips):
+    previousYears = list(range(2014,2020))
+    thisYear = 2020
+    
+    stateCount = len(dfStateData['State']) + 1
+    weekCount = dfCDCdeaths.week.max()
+    weekRange = range(1, weekCount + 1)
+
+    cols = ['New_Deaths', 'Median', 'Upper_Quartile', 'Lower_Quartile', 'Max', 'Min']
+    dfCDCState = pd.DataFrame(columns = cols, index = list(weekRange))
+    
+    fipsFilter = dfCDCdeaths.FIPS == str(fips).zfill(2)
+    prevYearFilter = dfCDCdeaths.year.isin(previousYears)
+    thisYearFilter = dfCDCdeaths.year == thisYear
+    for w in weekRange:
+        weekFilter = dfCDCdeaths.week == w
+        oldDeaths = dfCDCdeaths[fipsFilter & weekFilter & prevYearFilter ]['allcause']
+        newDeaths = dfCDCdeaths[fipsFilter & weekFilter & thisYearFilter ]['allcause']
+
+        dfCDCState.at[w, 'New_Deaths'] = newDeaths.mean() # gets out of list
+        dfCDCState.at[w, 'Median'] = oldDeaths.median()
+        dfCDCState.at[w, 'Upper_Quartile'] = oldDeaths.quantile(0.75)
+        dfCDCState.at[w, 'Lower_Quartile'] = oldDeaths.quantile(0.25)
+        dfCDCState.at[w, 'Max'] = oldDeaths.max()
+        dfCDCState.at[w, 'Min'] = oldDeaths.min()
+
+    maxDiff = dfCDCState['New_Deaths'] - dfCDCState['Max']
+    maxExcess = np.nansum((maxDiff > 0) * maxDiff)
+
+    upperDiff = dfCDCState['New_Deaths'] - dfCDCState['Upper_Quartile']
+    upperExcess = np.nansum((upperDiff > 0) * upperDiff)
+
+    medianDiff = dfCDCState['New_Deaths'] - dfCDCState['Median']
+    medianExcess = np.nansum((medianDiff > 0) * medianDiff)
+    
+    # Get state covid death data
+    # Daily death data multiplied by 7 to get rolling weekly death data
+    covidDeaths = dfCovid.loc[(fips), 'deaths'].diff().rolling(window = 7, min_periods = 5).mean() * 7
+    covidWeek = dfCovid.loc[(fips), 'week']
+        
+    
+    fig = go.Figure()
+    
+    # Raw CDC Data
+    fig.add_trace(go.Scatter(x = dfCDCState.index, y = dfCDCState['New_Deaths'], 
+                             name = '2020 Deaths',
+                             line_color = 'firebrick'))
+    fig.add_trace(go.Scatter(x = dfCDCState.index, y = dfCDCState['Median'], 
+                             name = 'Median',
+                             line_color = 'royalblue'))
+    fig.add_trace(go.Scatter(x = dfCDCState.index, y = dfCDCState['Upper_Quartile'], 
+                             name = 'Upper Quartile',
+                             line_color = 'orange', line_dash = 'dash'))
+    fig.add_trace(go.Scatter(x = dfCDCState.index, y = dfCDCState['Lower_Quartile'], 
+                             name = 'Lower Quartile',
+                             line_color = 'orange', line_dash = 'dot',
+                             visible = 'legendonly'))
+    fig.add_trace(go.Scatter(x = dfCDCState.index, y = dfCDCState['Max'], 
+                             name = 'Max',
+                             line_color = 'green', line_dash = 'dash'))
+    fig.add_trace(go.Scatter(x = dfCDCState.index, y = dfCDCState['Min'], 
+                             name = 'Min',
+                             line_color = 'green', line_dash = 'dot',
+                             visible = 'legendonly'))
+    
+#     yMinRaw = dfCDCState.iloc[1:]['Min'].min() * 0.9
+#     yMaxRaw = max(dfCDCState.iloc[1:]['Max'].max(), dfCDCState.iloc[1:]['New_Deaths'].max()) * 1.1
+    visibleRaw = [True, True, True, 'legendonly', True, 'legendonly']
+    hiddenRaw = [False] * len(visibleRaw)
+
+    # Normalized Data
+    norm2020 = dfCDCState['New_Deaths'] - dfCDCState['Median']
+    normMax = dfCDCState['Max'] - dfCDCState['Median']
+    normMin = dfCDCState['Min'] - dfCDCState['Median']
+    normUpper = dfCDCState['Upper_Quartile'] - dfCDCState['Median']
+    normLower = dfCDCState['Lower_Quartile'] - dfCDCState['Median']
+    
+    fig.add_trace(go.Scatter(x = dfCDCState.index, y = norm2020, 
+                             name = '2020 Deaths',
+                             line_color = 'firebrick',
+                             visible = False))
+    fig.add_trace(go.Scatter(x = covidWeek, y = covidDeaths, 
+                             name = 'Covid Deaths',
+                             line_color = 'purple',
+                             visible = False))
+    fig.add_trace(go.Scatter(x = dfCDCState.index, y = normUpper, 
+                             name = 'Upper Quartile',
+                             line_color = 'orange', line_dash = 'dash',
+                             visible = False))
+    fig.add_trace(go.Scatter(x = dfCDCState.index, y = normLower, 
+                             name = 'Lower Quartile',
+                             line_color = 'orange', line_dash = 'dot',
+                             visible = False))
+    fig.add_trace(go.Scatter(x = dfCDCState.index, y = normMax, 
+                             name = 'Max',
+                             line_color = 'green', line_dash = 'dash',
+                             visible = False))
+    fig.add_trace(go.Scatter(x = dfCDCState.index, y = normMin, 
+                             name = 'Min',
+                             line_color = 'green', line_dash = 'dot',
+                             visible = False))
+#     yMinNorm = min(norm2020.min(), 0) * 1.1
+#     yMaxNorm = max(norm2020.max(), normMax.max()) * 1.1
+    visibleNorm = [True, True, True, 'legendonly', True, 'legendonly']
+    hiddenNorm = [False] * len(visibleNorm)
+    
+    plotVisibility = [visibleRaw + hiddenNorm, hiddenRaw + visibleNorm]
+    annotationText = ('Note: CDC data may be up to 8 weeks delayed.' + '<br>' + '<br>' +
+        'Where 2020 is greater than X' + '<br>' +
+        '2020 - Max = ' + str(maxExcess) + '<br>' +
+        '2020 - Upper Quartile = ' + str(upperExcess) +  '<br>' + 
+        '2020 - Median = ' + str(medianExcess))
+    
+    fig.update_layout(title_text = 'All Cause Reported Deaths 2014-2019 vs. 2020',
+                      height = figHeight,
+                      width = figWidth,
+                      hovermode = 'x unified',
+#                       yaxis_range = [yMinRaw, yMaxRaw],
+                      xaxis_title = 'Week in Year',
+                      annotations = [dict(x = 1.3, y = 1.2,
+                                          showarrow = False,
+                                          text = annotationText,
+                                          font_size = 10,
+                                          align = 'left',
+                                          xref = 'paper', yref = 'paper')],
+                      updatemenus = [dict(
+                          type = 'buttons',
+                          direction = 'down',
+                          x = 1.3,
+                          y = 0.2,
+                          buttons = list([
+                              dict(label = 'Raw CDC Data',
+                                   method = 'update',
+                                   args = [{'visible': plotVisibility[0]},
+                                           {'title': 'All Cause Reported Deaths 2014-2019 vs. 2020'}#,
+#                                            {'yaxes': {'range': [yMinRaw, yMaxRaw]}}
+                                          ]),
+                              dict(label = 'Normalized CDC Data',
+                                   method = 'update',
+                                   args = [{'visible': plotVisibility[1]},
+                                           {'title': 'All Cause Reported Deaths about 2014-2019 Median'}#,
+#                                            {'yaxes': {'range': [yMinNorm, yMaxNorm]}}
+                                          ]),
+                     ]),)
+                     ])
+    return fig
     
 def per_capita_axis(fig, dfStateData, fips):
 #     def raw2capita(x):
@@ -768,7 +1062,8 @@ def figures_to_html(figs, filename):
     '''
 
     headerText = filename.split('/')[1].split('.')[0]
-    stateName = headerText.split(' ')[2]
+    space = ' '
+    stateName = space.join(headerText.split(' ')[2:])
     dashboard = open(filename, 'w')
     dashboard.write("<html><head>" + 
                     "<title>" + headerText + "</title>" + "\n" + 
@@ -786,7 +1081,8 @@ def figures_to_html(figs, filename):
                     "</style></head><body>" + "\n" +
                     "<div class=\"header\">"  + "\n" +
                     "<h1>" + stateName + "</h1></div>"  + "\n" +
-                    "<a href=\"https://sckilcoyne.github.io/Coivd19/\">State Index</a>")
+                    "<a href=\"https://sckilcoyne.github.io/Coivd19/\">State Index</a>" + 
+                    "  <a href=\"https://github.com/sckilcoyne/Coivd19\">GitHub Project</a>")
 
     add_js = True
     for fig in figs:
@@ -805,6 +1101,10 @@ def githubIndex(dfStateData, fipsList):
     fileName = 'index.md'
     
     indexFile = open(fileName, 'w')
+    indexFile.write('[' + 'GitHub Project' + '](' + 'https://github.com/sckilcoyne/Coivd19' + ')  \n' + 
+                   'Sources: [New York Times](https://github.com/nytimes/covid-19-data) ' +
+                    '[Covid Tracking Project](https://covidtracking.com/) ' +
+                    '[US Census](https://api.census.gov/data/2019/pep/population)  \n')
     for fips in fipsList:
         if int(fips) in [int(i) for i in dfStateData.index.tolist()]:
             stateName = dfStateData.at[str(fips).zfill(2), 'State']
