@@ -1,7 +1,7 @@
 [GitHub Project](https://github.com/sckilcoyne/Coivd19)  
-Sources: [New York Times](https://github.com/nytimes/covid-19-data), [Covid Tracking Project](https://covidtracking.com/), [US Census](https://api.census.gov/data/2019/pep/population),  
-[Apple](https://www.apple.com/covid19/mobility),  
-[Google](https://www.google.com/covid19/mobility)[USA](https://sckilcoyne.github.io/Coivd19/figs/Tracking Data USA.html)  
+Sources: [New York Times](https://github.com/nytimes/covid-19-data), [Covid Tracking Project](https://covidtracking.com/), [US Census](https://api.census.gov/data/2019/pep/population), 
+[Apple](https://www.apple.com/covid19/mobility), 
+[Google](https://www.google.com/covid19/mobility)  [USA](https://sckilcoyne.github.io/Coivd19/figs/Tracking Data USA.html)  
 [Alabama](https://sckilcoyne.github.io/Coivd19/figs/Tracking Data Alabama.html)  
 [Alaska](https://sckilcoyne.github.io/Coivd19/figs/Tracking Data Alaska.html)  
 [Arizona](https://sckilcoyne.github.io/Coivd19/figs/Tracking Data Arizona.html)  

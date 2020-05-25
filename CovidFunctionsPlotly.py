@@ -1144,9 +1144,9 @@ def githubIndex(dfStateData, fipsList):
     indexFile.write('[GitHub Project](https://github.com/sckilcoyne/Coivd19)  \n' + 
                     'Sources: [New York Times](https://github.com/nytimes/covid-19-data), ' +
                     '[Covid Tracking Project](https://covidtracking.com/), ' +
-                    '[US Census](https://api.census.gov/data/2019/pep/population),  \n' +
-                    '[Apple](https://www.apple.com/covid19/mobility),  \n' +
-                    '[Google](https://www.google.com/covid19/mobility)')
+                    '[US Census](https://api.census.gov/data/2019/pep/population), \n' +
+                    '[Apple](https://www.apple.com/covid19/mobility), \n' +
+                    '[Google](https://www.google.com/covid19/mobility)  ')
     for fips in fipsList:
         if int(fips) in [int(i) for i in dfStateData.index.tolist()]:
             stateName = dfStateData.at[str(fips).zfill(2), 'State']
