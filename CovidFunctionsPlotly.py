@@ -57,7 +57,7 @@ def correlations(shiftSearch, dfCovid, fipsList):
     print('Completed ' + str(shiftSearch) + ' days of case-death correlations and auto-correlations.')
     return dfShiftCor
 
-def state_plot(dfCovid, dfShiftCor, dfStateData, dfEvents, dfCDCdeaths, fips, plotDateRange):
+def state_plot(dfCovid, dfShiftCor, dfStateData, dfEvents, dfCDCdeaths, dfMobility, fips, plotDateRange):
     # Notable Events
     dfEventsAll = dfEvents.groupby('FIPS').get_group('All')
     if str(fips).zfill(2) in dfEvents.groupby('FIPS').groups.keys():
@@ -89,17 +89,20 @@ def state_plot(dfCovid, dfShiftCor, dfStateData, dfEvents, dfCDCdeaths, fips, pl
     # CDC Death Data
     figCDCdeaths = cdc_deaths_plot(dfCDCdeaths, dfCovid, dfStateData, fips)
     
+    # Mobility tracking Plot
+    figMobility = mobility_plot(dfMobility, dfStateData, fips)
+    
     # Add per capita axis
     perCapFig = [figDailyTesting, figTestingGrow]
     for fig in perCapFig:
         fig = per_capita_axis(fig, dfStateData, fips)
         
     # Add event markers
-    for fig in [figTracking, figReffective]:
+    for fig in [figTracking, figReffective, figMobility]:
         fig = event_markers(fig, dfEventsState)
         
     # Overall figure formatting     
-    figList = [figTracking, figReffective, 
+    figList = [figTracking, figReffective, figMobility,
                figDailyTesting, figTestPercent, figTestingGrow,
                figCDCdeaths, figResource, figCorrelation]
     htmlFile = 'figs/Tracking Data ' + dfStateData.at[str(fips).zfill(2), 'State'] + '.html'
@@ -414,7 +417,7 @@ def r_effective_plot(dfCovid, fips, plotDateRange):
         yaxis_type = "log",
         yaxis_range = [np.log10(0.6), np.log10(6)],
         showlegend = True,
-        margin=dict(l=20, r=20, t=30, b=20),
+        margin = dict(l=20, r=20, t=30, b=20),
         height = figHeight,
         width = figWidth,
         hovermode = 'x unified',
@@ -424,21 +427,21 @@ def r_effective_plot(dfCovid, fips, plotDateRange):
             range = plotDateRange,
             rangeselector=dict(
                 buttons=list([
-                    dict(count=1,
-                         label="1m",
-                         step="month",
-                         stepmode="backward"),
-                    dict(count=2,
-                         label="2m",
-                         step="month",
-                         stepmode="backward"),
+                    dict(count = 1,
+                         label = "1m",
+                         step = "month",
+                         stepmode = "backward"),
+                    dict(count = 2,
+                         label = "2m",
+                         step = "month",
+                         stepmode = "backward"),
 #                     dict(step="all")
                 ])
             ),
-            rangeslider=dict(
-                visible=True,
+            rangeslider = dict(
+                visible = True,
                 range = plotDateRange),
-            type="date"))
+            type = "date"))
     
     return fig
     
@@ -461,11 +464,11 @@ def correlation_plot(dfShiftCor, fips):
     fig.add_trace(go.Scatter(x = x_data, y = caseAutoCor,
                              mode = 'lines',
                              name = 'Case Autocorrelation, Raw',
-                             visible='legendonly'))
+                             visible ='legendonly'))
     fig.add_trace(go.Scatter(x = x_data, y = caseAutoCorLog,
                              mode = 'lines',
                              name = 'Case Autocorrelation, Log',
-                             visible='legendonly'))
+                             visible ='legendonly'))
         
     # Fig formatting
     fig.update_layout(
@@ -911,6 +914,45 @@ def cdc_deaths_plot(dfCDCdeaths, dfCovid, dfStateData, fips):
                      ])
     return fig
     
+def mobility_plot(dfMobility, dfStateData, fips):
+    stateName = dfStateData.at[str(fips).zfill(2), 'State']
+    
+    fig = go.Figure()
+
+    dates = dfMobility.loc[stateName].index.values
+
+    # Plot each column of mobility data
+    for column in dfMobility:
+        data = dfMobility.loc[stateName][column]
+        
+        # Hide raw mobility data, show means
+        if 'mean' in column:
+            visible = True
+        else:
+            visible = 'legendonly'
+
+        fig.add_trace(go.Scatter(x = dates, y = data,
+                                 name = column,
+                                 visible = visible))
+
+
+    fig.update_layout(
+        title = {
+            'text':'Relative Mobility',
+            'x':0.5,
+            'xanchor': 'center'},
+        height = figHeight,
+        width = figWidth,
+        hovermode = 'x unified',
+        showlegend = True,
+        margin = dict(l=20, r=20, t=30, b=20),
+        yaxis_tickformat = '1%',
+        yaxis_zeroline = True, 
+        yaxis_zerolinewidth = 2, 
+        yaxis_zerolinecolor = 'black')
+
+    return fig
+
 def per_capita_axis(fig, dfStateData, fips):
 #     def raw2capita(x):
 #         return x * 10000 / int(dfStateData.at[str(fips).zfill(2), 'Population'])
