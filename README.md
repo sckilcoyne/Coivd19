@@ -8,3 +8,5 @@
 * [US Census](https://api.census.gov/data/2019/pep/population)  
 * [CDC 2014 - 2018 deaths](https://data.cdc.gov/NCHS/Weekly-Counts-of-Deaths-by-State-and-Select-Causes/3yf8-kanr)  
 * [CDC 2019 - 2020 deaths](https://data.cdc.gov/NCHS/Weekly-Counts-of-Deaths-by-State-and-Select-Causes/3yf8-kanr)  
+* [Apple](https://www.apple.com/covid19/mobility)
+* [Google](https://www.google.com/covid19/mobility)
