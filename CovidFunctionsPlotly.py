@@ -90,7 +90,7 @@ def state_plot(dfCovid, dfShiftCor, dfStateData, dfEvents, dfCDCdeaths, dfMobili
     figCDCdeaths = cdc_deaths_plot(dfCDCdeaths, dfCovid, dfStateData, fips)
     
     # Mobility tracking Plot
-    figMobility = mobility_plot(dfMobility, dfStateData, fips)
+    figMobility = mobility_plot(dfMobility, dfStateData, fips, plotDateRange)
     
     # Add per capita axis
     perCapFig = [figDailyTesting, figTestingGrow]
@@ -280,6 +280,11 @@ def tracking_plot(dfCovid, fips, plotDateRange, dfStateData):
         estActive = pd.DataFrame({'date': dates, 'cases': cases})
         estActive['date'] = estActive['date'] + pd.Timedelta(days = 14)
         estActive = estActive.set_index(['date'])
+        print(dfCase['cases'])
+        print()
+        print(estActive['cases'])
+        print()
+        print(dfCase['cases'] - estActive['cases'])
         estActive['est_active'] = dfCase['cases'] - estActive['cases']
         fig.add_trace(go.Scatter(x = estActive.index, y = estActive['est_active'],
                                  mode='lines',
@@ -288,11 +293,12 @@ def tracking_plot(dfCovid, fips, plotDateRange, dfStateData):
 
     # Plot Visibility
     listVis = []
+    legend = [True, 'legendonly', 'legendonly']
     for i in range(4):
-        plotVis = list(np.repeat([i == 0], 3)) * 2  + [i == 0] * optionalPlots # Cases, deaths, optional
-        plotVis = plotVis + list(np.repeat([i == 1], 3)) * 2  + [i == 1] * optionalPlots
-        plotVis = plotVis + list(np.repeat([i == 2], 3)) * 2  + [i == 2] * optionalPlots
-        plotVis = plotVis + list(np.repeat([i == 3], 3)) * 2  + [i == 3] * optionalPlots
+        plotVis = (legend if i == 0 else [False] * 3) * 2  + [i == 0] * optionalPlots # Cases, deaths, optional
+        plotVis = plotVis + (legend if i == 1 else [False] * 3) * 2 + [i == 1] * optionalPlots
+        plotVis = plotVis + (legend if i == 2 else [False] * 3) * 2 + [i == 2] * optionalPlots
+        plotVis = plotVis + (legend if i == 3 else [False] * 3) * 2 + [i == 3] * optionalPlots
         plotVis = plotVis + [i == 0, i == 1, i == 2, i == 3] # Inflection Points
         plotVis = plotVis + [i == 0, i == 1, i == 2, i == 3] # Active
         plotVis = plotVis + [i == 0, i == 1, i == 2, i == 3] # Estimated Active
@@ -914,7 +920,7 @@ def cdc_deaths_plot(dfCDCdeaths, dfCovid, dfStateData, fips):
                      ])
     return fig
     
-def mobility_plot(dfMobility, dfStateData, fips):
+def mobility_plot(dfMobility, dfStateData, fips, plotDateRange):
     stateName = dfStateData.at[str(fips).zfill(2), 'State']
     
     fig = go.Figure()
@@ -949,7 +955,26 @@ def mobility_plot(dfMobility, dfStateData, fips):
         yaxis_tickformat = '1%',
         yaxis_zeroline = True, 
         yaxis_zerolinewidth = 2, 
-        yaxis_zerolinecolor = 'black')
+        yaxis_zerolinecolor = 'black',
+        xaxis=dict(
+                range = plotDateRange,
+                rangeselector=dict(
+                    buttons=list([
+                        dict(count = 1,
+                             label = "1m",
+                             step = "month",
+                             stepmode = "backward"),
+                        dict(count = 2,
+                             label = "2m",
+                             step = "month",
+                             stepmode = "backward"),
+    #                     dict(step="all")
+                    ])
+                ),
+                rangeslider = dict(
+                    visible = True,
+                    range = plotDateRange),
+                type = "date"))
 
     return fig
 
