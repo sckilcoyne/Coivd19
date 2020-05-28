@@ -280,13 +280,9 @@ def tracking_plot(dfCovid, fips, plotDateRange, dfStateData):
         estActive = pd.DataFrame({'date': dates, 'cases': cases})
         estActive['date'] = estActive['date'] + pd.Timedelta(days = 14)
         estActive = estActive.set_index(['date'])
-        print(dfCase['cases'])
-        print()
-        print(estActive['cases'])
-        print()
-        print(dfCase['cases'] - estActive['cases'])
-        estActive['est_active'] = dfCase['cases'] - estActive['cases']
-        fig.add_trace(go.Scatter(x = estActive.index, y = estActive['est_active'],
+        estActiveCases = dfCase['cases'] - estActive['cases']
+#         print(estActiveCases)
+        fig.add_trace(go.Scatter(x = estActiveCases.index, y = estActiveCases,
                                  mode='lines',
                                  name='Estimated Active (14 day case life)',
                                 line_color = 'green'))    
