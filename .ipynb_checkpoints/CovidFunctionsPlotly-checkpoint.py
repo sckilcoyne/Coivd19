@@ -57,7 +57,7 @@ def correlations(shiftSearch, dfCovid, fipsList):
     print('Completed ' + str(shiftSearch) + ' days of case-death correlations and auto-correlations.')
     return dfShiftCor
 
-def state_plot(dfCovid, dfShiftCor, dfStateData, dfEvents, dfCDCdeaths, fips, plotDateRange):
+def state_plot(dfCovid, dfShiftCor, dfStateData, dfEvents, dfCDCdeaths, dfMobility, fips, plotDateRange):
     # Notable Events
     dfEventsAll = dfEvents.groupby('FIPS').get_group('All')
     if str(fips).zfill(2) in dfEvents.groupby('FIPS').groups.keys():
@@ -89,19 +89,20 @@ def state_plot(dfCovid, dfShiftCor, dfStateData, dfEvents, dfCDCdeaths, fips, pl
     # CDC Death Data
     figCDCdeaths = cdc_deaths_plot(dfCDCdeaths, dfCovid, dfStateData, fips)
     
+    # Mobility tracking Plot
+    figMobility = mobility_plot(dfMobility, dfStateData, fips, plotDateRange)
+    
     # Add per capita axis
     perCapFig = [figDailyTesting, figTestingGrow]
-#     perCapFig = [figTracking, figTrackingLog, figDailyTesting, 
-#                 figTestingGrow, figResource, figResourceLog]
     for fig in perCapFig:
         fig = per_capita_axis(fig, dfStateData, fips)
         
     # Add event markers
-    for fig in [figTracking, figReffective]:
+    for fig in [figTracking, figReffective, figMobility]:
         fig = event_markers(fig, dfEventsState)
         
     # Overall figure formatting     
-    figList = [figTracking, figReffective, 
+    figList = [figTracking, figReffective, figMobility,
                figDailyTesting, figTestPercent, figTestingGrow,
                figCDCdeaths, figResource, figCorrelation]
     htmlFile = 'figs/Tracking Data ' + dfStateData.at[str(fips).zfill(2), 'State'] + '.html'
@@ -279,19 +280,21 @@ def tracking_plot(dfCovid, fips, plotDateRange, dfStateData):
         estActive = pd.DataFrame({'date': dates, 'cases': cases})
         estActive['date'] = estActive['date'] + pd.Timedelta(days = 14)
         estActive = estActive.set_index(['date'])
-        estActive['est_active'] = dfCase['cases'] - estActive['cases']
-        fig.add_trace(go.Scatter(x = estActive.index, y = estActive['est_active'],
+        estActiveCases = dfCase['cases'] - estActive['cases']
+#         print(estActiveCases)
+        fig.add_trace(go.Scatter(x = estActiveCases.index, y = estActiveCases,
                                  mode='lines',
                                  name='Estimated Active (14 day case life)',
                                 line_color = 'green'))    
 
     # Plot Visibility
     listVis = []
+    legend = [True, 'legendonly', 'legendonly']
     for i in range(4):
-        plotVis = list(np.repeat([i == 0], 3)) * 2  + [i == 0] * optionalPlots # Cases, deaths, optional
-        plotVis = plotVis + list(np.repeat([i == 1], 3)) * 2  + [i == 1] * optionalPlots
-        plotVis = plotVis + list(np.repeat([i == 2], 3)) * 2  + [i == 2] * optionalPlots
-        plotVis = plotVis + list(np.repeat([i == 3], 3)) * 2  + [i == 3] * optionalPlots
+        plotVis = (legend if i == 0 else [False] * 3) * 2  + [i == 0] * optionalPlots # Cases, deaths, optional
+        plotVis = plotVis + (legend if i == 1 else [False] * 3) * 2 + [i == 1] * optionalPlots
+        plotVis = plotVis + (legend if i == 2 else [False] * 3) * 2 + [i == 2] * optionalPlots
+        plotVis = plotVis + (legend if i == 3 else [False] * 3) * 2 + [i == 3] * optionalPlots
         plotVis = plotVis + [i == 0, i == 1, i == 2, i == 3] # Inflection Points
         plotVis = plotVis + [i == 0, i == 1, i == 2, i == 3] # Active
         plotVis = plotVis + [i == 0, i == 1, i == 2, i == 3] # Estimated Active
@@ -416,7 +419,7 @@ def r_effective_plot(dfCovid, fips, plotDateRange):
         yaxis_type = "log",
         yaxis_range = [np.log10(0.6), np.log10(6)],
         showlegend = True,
-        margin=dict(l=20, r=20, t=30, b=20),
+        margin = dict(l=20, r=20, t=30, b=20),
         height = figHeight,
         width = figWidth,
         hovermode = 'x unified',
@@ -426,21 +429,21 @@ def r_effective_plot(dfCovid, fips, plotDateRange):
             range = plotDateRange,
             rangeselector=dict(
                 buttons=list([
-                    dict(count=1,
-                         label="1m",
-                         step="month",
-                         stepmode="backward"),
-                    dict(count=2,
-                         label="2m",
-                         step="month",
-                         stepmode="backward"),
+                    dict(count = 1,
+                         label = "1m",
+                         step = "month",
+                         stepmode = "backward"),
+                    dict(count = 2,
+                         label = "2m",
+                         step = "month",
+                         stepmode = "backward"),
 #                     dict(step="all")
                 ])
             ),
-            rangeslider=dict(
-                visible=True,
+            rangeslider = dict(
+                visible = True,
                 range = plotDateRange),
-            type="date"))
+            type = "date"))
     
     return fig
     
@@ -463,11 +466,11 @@ def correlation_plot(dfShiftCor, fips):
     fig.add_trace(go.Scatter(x = x_data, y = caseAutoCor,
                              mode = 'lines',
                              name = 'Case Autocorrelation, Raw',
-                             visible='legendonly'))
+                             visible ='legendonly'))
     fig.add_trace(go.Scatter(x = x_data, y = caseAutoCorLog,
                              mode = 'lines',
                              name = 'Case Autocorrelation, Log',
-                             visible='legendonly'))
+                             visible ='legendonly'))
         
     # Fig formatting
     fig.update_layout(
@@ -913,6 +916,64 @@ def cdc_deaths_plot(dfCDCdeaths, dfCovid, dfStateData, fips):
                      ])
     return fig
     
+def mobility_plot(dfMobility, dfStateData, fips, plotDateRange):
+    stateName = dfStateData.at[str(fips).zfill(2), 'State']
+    
+    fig = go.Figure()
+
+    dates = dfMobility.loc[stateName].index.values
+
+    # Plot each column of mobility data
+    for column in dfMobility:
+        data = dfMobility.loc[stateName][column]
+        
+        # Hide raw mobility data, show means
+        if 'mean' in column:
+            visible = True
+        else:
+            visible = 'legendonly'
+
+        fig.add_trace(go.Scatter(x = dates, y = data,
+                                 name = column,
+                                 visible = visible))
+
+
+    fig.update_layout(
+        title = {
+            'text':'Relative Mobility',
+            'x':0.5,
+            'xanchor': 'center'},
+        height = figHeight,
+        width = figWidth,
+        hovermode = 'x unified',
+        showlegend = True,
+        margin = dict(l=20, r=20, t=30, b=20),
+        yaxis_tickformat = '1%',
+        yaxis_zeroline = True, 
+        yaxis_zerolinewidth = 2, 
+        yaxis_zerolinecolor = 'black',
+        xaxis=dict(
+                range = plotDateRange,
+                rangeselector=dict(
+                    buttons=list([
+                        dict(count = 1,
+                             label = "1m",
+                             step = "month",
+                             stepmode = "backward"),
+                        dict(count = 2,
+                             label = "2m",
+                             step = "month",
+                             stepmode = "backward"),
+    #                     dict(step="all")
+                    ])
+                ),
+                rangeslider = dict(
+                    visible = True,
+                    range = plotDateRange),
+                type = "date"))
+
+    return fig
+
 def per_capita_axis(fig, dfStateData, fips):
 #     def raw2capita(x):
 #         return x * 10000 / int(dfStateData.at[str(fips).zfill(2), 'Population'])
@@ -1101,10 +1162,12 @@ def githubIndex(dfStateData, fipsList):
     fileName = 'index.md'
     
     indexFile = open(fileName, 'w')
-    indexFile.write('[' + 'GitHub Project' + '](' + 'https://github.com/sckilcoyne/Coivd19' + ')  \n' + 
-                   'Sources: [New York Times](https://github.com/nytimes/covid-19-data) ' +
-                    '[Covid Tracking Project](https://covidtracking.com/) ' +
-                    '[US Census](https://api.census.gov/data/2019/pep/population)  \n')
+    indexFile.write('[GitHub Project](https://github.com/sckilcoyne/Coivd19)  \n' + 
+                    'Sources: [New York Times](https://github.com/nytimes/covid-19-data), ' +
+                    '[Covid Tracking Project](https://covidtracking.com/), ' +
+                    '[US Census](https://api.census.gov/data/2019/pep/population), \n' +
+                    '[Apple](https://www.apple.com/covid19/mobility), \n' +
+                    '[Google](https://www.google.com/covid19/mobility)  ')
     for fips in fipsList:
         if int(fips) in [int(i) for i in dfStateData.index.tolist()]:
             stateName = dfStateData.at[str(fips).zfill(2), 'State']
