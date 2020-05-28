@@ -122,6 +122,8 @@ def mobility_data_google(dfGoogleRaw, state):
     # Filter data to just state level, adjust for country
     if state == 'USA':
         googleStateDataRaw = dfGoogleRaw[(dfGoogleRaw['country_region'] == 'United States') & (pd.isnull(dfGoogleRaw['sub_region_1']))]
+        googleStateDataRaw['sub_region_1'] = 'USA'
+#         print(googleStateDataRaw.head(5))
         print('Collected Google USA data')
     else:
         googleStateDataRaw = dfGoogleRaw[(dfGoogleRaw['sub_region_1'] == state) & (pd.isnull(dfGoogleRaw['sub_region_2']))]
