@@ -183,6 +183,7 @@ def mobility_data(dfStateData):
     
     # Add each state mobility reports
     for state in dfStateData['State']:
+        if state == 'USA': print(state)
         # Get state mobility data
         dfAppleState = mobility_data_apple(dfAppleRaw, state)
         googleStateData = mobility_data_google(dfGoogleRaw, state)
