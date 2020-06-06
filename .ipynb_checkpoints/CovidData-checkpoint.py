@@ -57,6 +57,7 @@ def combine_data():
     return dfCombined
 
 def cdc_death_data(dfStateData):
+    debug = False
     
     # https://data.cdc.gov/NCHS/Weekly-Counts-of-Deaths-by-State-and-Select-Causes/3yf8-kanr
     weekDeath1418 = 'https://data.cdc.gov/resource/3yf8-kanr.json'
@@ -70,14 +71,22 @@ def cdc_death_data(dfStateData):
 
     dfCDCdeaths = pd.DataFrame(columns = cols)
     for state in dfStateData['State']:
+        if debug: print(state) 
+        
+        # Ignore USA
+        if state == 'USA': continue
+        
         # From 2014 to 2018
         weeklyDeaths = pd.read_json(weekDeath1418 + '?jurisdiction_of_occurrence=' + state.replace(' ','%20'))
         dfCDCdeaths = dfCDCdeaths.append(weeklyDeaths[cols])
+        if debug: print(dfCDCdeaths.tail(5)) 
+        
         # From 2019 to 2020
         weeklyDeathsNew = pd.read_json(weekDeath1920 + '?jurisdiction_of_occurrence=' + state.replace(' ','%20'))
         colRename = {'all_cause': 'allcause', 'week_ending_date': 'weekendingdate'} # CDC Changed column names on me
         weeklyDeathsNew.rename(columns = colRename, inplace = True)
         dfCDCdeaths = dfCDCdeaths.append(weeklyDeathsNew[cols])
+        if debug: print(dfCDCdeaths.tail(5)) 
 
     colRename = {'jurisdiction_of_occurrence': 'state', 'mmwryear': 'year', 'mmwrweek': 'week'}
     dfCDCdeaths.rename(columns = colRename, inplace = True)
