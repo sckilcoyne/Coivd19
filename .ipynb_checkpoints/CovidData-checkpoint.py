@@ -56,8 +56,8 @@ def combine_data():
         
     return dfCombined
 
-def cdc_death_data(dfStateData):
-    debug = False
+def cdc_death_data(dfStateData, debug = False):
+#     debug = False
     
     # https://data.cdc.gov/NCHS/Weekly-Counts-of-Deaths-by-State-and-Select-Causes/3yf8-kanr
     weekDeath1418 = 'https://data.cdc.gov/resource/3yf8-kanr.json'
@@ -153,7 +153,8 @@ def mobility_data_google(dfGoogleRaw, state):
     googleStateData = googleStateData.set_index(['date', 'state'])
 
     # Remove spurious columns
-    dropCols = ['google_country_region_code', 'google_country_region', 'google_sub_region_2']
+    dropCols = ['google_country_region_code', 'google_country_region', 'google_sub_region_2',
+                'google_iso_3166_2_code', 'google_census_fips_code']
     googleStateData.drop(dropCols, axis = 1, errors = 'ignore', inplace = True)
 
 
@@ -172,6 +173,7 @@ def mobility_data(dfStateData):
 #     Google: https://www.google.com/covid19/mobility/  
 #     Apple: https://www.apple.com/covid19/mobility
 
+    debug = False
     # Downloaded mobility data csv files
     appleCSV = 'applemobilitytrends'
     googleCSV = 'Global_Mobility_Report'
@@ -208,6 +210,7 @@ def mobility_data(dfStateData):
     dfMobility = dfMobility.sort_index()
 
     # Set data to fractional
+    if debug: print(dfMobility.tail(20))
     dfMobility = dfMobility / 100
 
     # Get mean and 7 day mean of mobility measures
