@@ -392,22 +392,37 @@ def r_effective_plot(dfCovid, fips, plotDateRange):
     tObserved = [1, 3, 7]
     for T in tObserved:
         try:
-            Reff = dfCovid.loc[fips]['positive_cases'] / dfCovid.loc[fips]['positive_cases'].shift(T)
+#             Reff = dfCovid.loc[fips]['positive_cases'] / dfCovid.loc[fips]['positive_cases'].shift(T)
+            Pos = dfCovid.loc[fips]['positive_cases'].diff(T)
+            PosT = dfCovid.loc[fips]['positive_cases'].shift(T).diff(T)
+            Reff = Pos / PosT
+            Reff = Reff.rolling(window = T).mean()
         except ZeroDivisionError:
             Reff = float('nan')
         
         try:
             totalTests = dfCovid.loc[fips]['positive_cases'] + dfCovid.loc[fips]['negative(CTP)']
             newTestsScaling = totalTests / totalTests.shift(T)
-            ReffScale = dfCovid.loc[fips]['positive_cases'] / (dfCovid.loc[fips]['positive_cases'].shift(T) * newTestsScaling)
+#             ReffScale = dfCovid.loc[fips]['positive_cases'] / (dfCovid.loc[fips]['positive_cases'].shift(T) * newTestsScaling)
+            Pos = dfCovid.loc[fips]['positive_cases'].diff(T)
+            PosT = dfCovid.loc[fips]['positive_cases'].shift(T).diff(T) * newTestsScaling
+            ReffScale = Pos / PosT
+            ReffScale = ReffScale.rolling(window = T).mean()
         except ZeroDivisionError:
             ReffScale = float('nan')            
         
+        if T == max(tObserved):
+            visible = True
+        else:
+            visible = 'legendonly'
+            
         fig.add_trace(go.Scatter(x = Reff.index, y = Reff,
                              mode='lines',
+                             visible = visible,
                              name= str(T) + ' day Observed R = ' + str(Reff[-1].round(2))))
         fig.add_trace(go.Scatter(x = ReffScale.index, y = ReffScale,
                              mode='lines',
+                             visible = visible,
                              name=str(T) + ' day Adjusted  R = ' + str(ReffScale[-1].round(2))))
     
     # Fig formatting
@@ -417,7 +432,7 @@ def r_effective_plot(dfCovid, fips, plotDateRange):
             'x':0.5,
             'xanchor': 'center'},
         yaxis_type = "log",
-        yaxis_range = [np.log10(0.6), np.log10(6)],
+        yaxis_range = [np.log10(0.3), np.log10(6)],
         showlegend = True,
         margin = dict(l=20, r=20, t=30, b=20),
         height = figHeight,
