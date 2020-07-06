@@ -426,6 +426,17 @@ def r_effective_plot(dfCovid, fips, plotDateRange):
                              name=str(T) + ' day Adjusted  R = ' + str(ReffScale[-1].round(2))))
     
     # Fig formatting
+    fig.add_shape(type = 'line',
+                  xref = 'paper',
+                  yref = 'y',
+                  x0 = 0,
+                  y0 = 1,
+                  x1 = 1,
+                  y1 = 1,
+                  line = dict(
+                          color = 'Black',
+                          width = 1))
+    
     fig.update_layout(
         title = {
             'text':'Estimated R',
