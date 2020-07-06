@@ -91,3 +91,4 @@ All,3/11/20,Sports Shut Down,
 All,3/13/20,National Emergency Declared,https://tracker.opportunityinsights.org/
 All,3/27/20,CARES Act,https://tracker.opportunityinsights.org/
 All,5/25/20,Memorial Day and George Floyd Murder,https://en.wikipedia.org/wiki/Death_of_George_Floyd
+All,7/4/20,4th of July
