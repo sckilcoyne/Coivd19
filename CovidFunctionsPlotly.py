@@ -203,9 +203,9 @@ def tracking_plot(dfCovid, fips, plotDateRange, dfStateData):
 
 
 
-    # Case Inflection Points 
-    cases = dfCovid.loc[fips]['positive_cases'].copy()    
-    inflections = inflection_points(cases)
+#     # Case Inflection Points 
+#     cases = dfCovid.loc[fips]['positive_cases'].copy()    
+#     inflections = inflection_points(cases)
 
     plotNames = [fig.data[i].name for i in range(len(fig.data))]
     indexPosList = []
@@ -220,15 +220,15 @@ def tracking_plot(dfCovid, fips, plotDateRange, dfStateData):
         except ValueError as e:
             break
 
-    xData = cases.index[inflections]
-    for casePlots in indexPosList:
-        yData = fig.data[casePlots].y[inflections]    
-        fig.add_trace(go.Scatter(x = xData, y = yData,
-                                 mode='markers',
-                                 marker_line_color = 'red',
-                                 marker_symbol = 'x-thin',
-                                 marker_line_width=2,
-                                 name='Case Inflection Points'))
+#     xData = cases.index[inflections]
+#     for casePlots in indexPosList:
+#         yData = fig.data[casePlots].y[inflections]    
+#         fig.add_trace(go.Scatter(x = xData, y = yData,
+#                                  mode='markers',
+#                                  marker_line_color = 'red',
+#                                  marker_symbol = 'x-thin',
+#                                  marker_line_width=2,
+#                                  name='Case Inflection Points'))
 
 
 
